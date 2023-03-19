@@ -77,13 +77,18 @@ class Configuration(wx.Frame):
 
     
     def create_ui(self):
-        self.main_layout.Add(self.create_client_info(), 0, wx.EXPAND | wx.ALL, 1)
+        self.create_client_info_sizer = self.create_client_info()
+        self.main_layout.Add(self.create_client_info_sizer, 0, wx.EXPAND | wx.ALL, 1)
         self.create_line(horizontal=1)
-        self.main_layout.Add(self.create_pacs_info(), 0, wx.EXPAND | wx.ALL, 1)
-        self.main_layout.Add(self.create_add_pacs_server(), 0, wx.EXPAND | wx.ALL, 1)
-        self.main_layout.Add(self.create_footer(), 0, wx.RIGHT | wx.EXPAND | wx.ALL, 1)
+        self.create_pacs_info_sizeer = self.create_pacs_info()
+        self.main_layout.Add(self.create_pacs_info_sizeer, 0, wx.EXPAND | wx.ALL, 1)
+        self.create_add_pacs_server_sizer = self.create_add_pacs_server()
+        self.main_layout.Add(self.create_add_pacs_server_sizer, 0, wx.EXPAND | wx.ALL, 1)
+        self.create_footer_sizer = self.create_footer()
+        self.main_layout.Add(self.create_footer_sizer, 0, wx.RIGHT | wx.EXPAND | wx.ALL, 1)
 
-        pass
+        
+        return
 
     def create_label_textbox(self, label='', text_box_value = '', enable=True, textbox_needed=1, horizontal=0, **kwargs):
 
@@ -101,7 +106,7 @@ class Configuration(wx.Frame):
         else:
             sizer.Add(label, 0, wx.LEFT|wx.TOP|wx.BOTTOM, border=1)
 
-        textbox = wx.TextCtrl(self.panel, value= text_box_value, style=wx.TE_LEFT)
+        textbox = wx.TextCtrl(self.panel, value= text_box_value, style=wx.TE_LEFT | wx.TE_PROCESS_ENTER)
         textbox.Enable(enable)
         if kwargs.get('textbox_size'):
             textbox.SetSize(kwargs.get('textbox_size'))
@@ -156,13 +161,12 @@ class Configuration(wx.Frame):
     def showmsg(t):
         import wx.lib.agw.pybusyinfo as PBI
         app = wx.App(redirect=False)
-        msg = 'this is a test'
+        msg = 'PACS Details are Deleted'
         title = 'Message!'
         d = PBI.PyBusyInfo(msg, title=title)
         time.sleep(t)
         return d  
     
-
     
     def on_advance_setting_click(self, event, obj):
         # get the button position and size
@@ -248,11 +252,19 @@ class Configuration(wx.Frame):
         # Enable the button if a row is selected
         row_id = event.GetRow()
         print(row_id)
+
         initiator.SelectRow(row_id)
         if row_id >= 0:
             for reactor in reactor_list:
                 reactor.Enable()
-                
+        # fill the self.ip_add, self.port, self.ae_title of form with this data
+        self.ip_address_textbox.SetValue(initiator.GetCellValue(row_id, 0))
+        self.port_textbox.SetValue(initiator.GetCellValue(row_id, 1))
+        self.ae_title_textbox.SetValue(initiator.GetCellValue(row_id, 2))
+        self.description_textbox.SetValue(initiator.GetCellValue(row_id, 3))
+        # enable all the buttons
+        self.ip_add_button.Enable()
+        self.ip_edit_button.Enable()
 
     def on_up(self, event, initiator, reactor):
         row_id = initiator.GetSelectedRows()[0]
@@ -282,12 +294,19 @@ class Configuration(wx.Frame):
                 self.configured_pacs.pop(row_id)
                 with open('pcv1_file.json', 'w') as file:
                     print('Writing to json file')
-                    json.dump(pacs_config_data , file)
+                    json.dump(self.pacs_data , file)
+            # now disable the delete button and empty the textboxes
+            self.ip_address_textbox.SetValue('')
+            self.port_textbox.SetValue('')
+            self.ae_title_textbox.SetValue('')
+            self.description_textbox.SetValue('')
         except Exception as e:
             self.show_error_message('Please Select a row to delete')
             print(e)
 
         self.deselect_rows_pacs(initiator)
+        reactor.Disable()
+        print(self.configured_pacs)
 
     def verify_pacs(self, event, initiator):
         #TODO: Write Program to verify pacs server details
@@ -306,13 +325,17 @@ class Configuration(wx.Frame):
         return status
         
     def deselect_rows(self, initiator, reactor_list):
-        initiator.ClearSelection()
-        for reactor in reactor_list:
-                reactor.Disable()
+        print('REACHED HERE 328')
+        # initiator.ClearSelection()
+        # for reactor in reactor_list:
+        #         reactor.Disable()
     
     def deselect_rows_pacs(self, initiator):
-        reactor_list = [self.delete_pacs_button, self.up_button, self.down_button, self.verify_pacs_button]
-        self.deselect_rows(initiator, reactor_list)
+        try:
+            reactor_list = [self.delete_pacs_button, self.up_button, self.down_button, self.verify_pacs_button]
+            self.deselect_rows(initiator, reactor_list)
+        except Exception as e:
+            print(e)
 
     def create_pacs_info(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -338,22 +361,33 @@ class Configuration(wx.Frame):
         box = wx.StaticBox(self.panel, label='Add PACS Server')
         main_sizer = wx.StaticBoxSizer(box, wx.HORIZONTAL)
 
-        ip_address, ip_address_textbox = self.create_label_textbox(label='IP Address', enable=True, label_size=(10, -1), textbox_size=(30, -1))
+        ip_address, self.ip_address_textbox = self.create_label_textbox(label='IP Address', enable=True, label_size=(10, -1), textbox_size=(30, -1))
+        self.ip_address_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
         main_sizer.Add(ip_address, 0, wx.EXPAND | wx.ALL, 5)
 
-        port, port_textbox = self.create_label_textbox(label='Port', enable=True)
+        port, self.port_textbox = self.create_label_textbox(label='Port', enable=True)
+        self.port_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
         main_sizer.Add(port, 0, wx.EXPAND | wx.ALL, 5)
 
-        ae_title, ae_title_textbox = self.create_label_textbox(label='AE Title', enable=True)
+        ae_title, self.ae_title_textbox = self.create_label_textbox(label='AE Title', enable=True)
+        self.ae_title_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
         main_sizer.Add(ae_title, 0, wx.EXPAND | wx.ALL, 5)
 
-        description, description_textbox = self.create_label_textbox(label='Description', enable=True)
+        description, self.description_textbox = self.create_label_textbox(label='Description', enable=True)
+        # bind description with the on_text_enter fucntion
+        self.description_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
         main_sizer.Add(description, 0, wx.EXPAND | wx.ALL, 5)
 
         # add button
-        add_button = self.create_button(label='Add', enable=True)
-        add_button.Bind(wx.EVT_BUTTON, lambda event: self.add_pacs_server(event, ip_address_textbox, port_textbox, ae_title_textbox, description_textbox))
-        main_sizer.Add(add_button, 0, wx.EXPAND | wx.ALL, 3)
+        button_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.ip_add_button = self.create_button(label='Add', enable=False)
+        self.ip_add_button.Bind(wx.EVT_BUTTON, lambda event: self.add_pacs_server(event, self.ip_address_textbox, self.port_textbox, self.ae_title_textbox, self.description_textbox))
+
+        self.ip_edit_button = self.create_button(label='Update', enable=False)
+
+        button_sizer.Add(self.ip_add_button, 0, wx.EXPAND | wx.ALL, 5)
+        button_sizer.Add(self.ip_edit_button, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         return main_sizer
     
@@ -378,7 +412,7 @@ class Configuration(wx.Frame):
 
                 with open('pcv1_file.json', 'w') as file:
                     print('Writing to json file')
-                    json.dump(pacs_config_data , file)
+                    json.dump(self.pacs_data , file)
 
             except Exception as e:
                 print(e)
@@ -429,6 +463,11 @@ class Configuration(wx.Frame):
         msg_dlg.ShowModal()
         msg_dlg.Destroy()
 
+    def on_text_enter(self, event):
+        print('enter')
+        if self.ip_address_textbox.GetValue() != '' and self.port_textbox.GetValue() != '' and self.ae_title_textbox.GetValue() != '' :
+            self.ip_add_button.Enable(True)
+            self.ip_edit_button.Enable(True)
 
 
 
