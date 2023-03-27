@@ -1,18 +1,10 @@
-"""
-Frame1
-
-Header 1: PACS Configuration Button, Pacs Location(DropBox), Modalities selection, Dates Selection(), calendar box, calendar box
-"""
-
-
 import wx
 import wx.adv as wxadv
 import wx.grid as gridlib
-
 from cfind import CFind
-
-from pacs_config import CustomDialog, Configuration
+from pacs_config import  Configuration
 from helpers import json_serial
+from constants import COLS
 
 
 
@@ -23,116 +15,12 @@ ALL_PACS =[]
 for i, pacs_obj in enumerate(CONFIGURED_PACS):
     CONFIGURED_PACS_MAPPER[pacs_obj['AE TITLE']] = pacs_obj
     ALL_PACS.append(pacs_obj['AE TITLE'])
-COLS = ["PatientID", "PatientName", "StudyInstanceUID", "AccessionNumber", "PatientBirthDate", "StudyDate", "StudyTime", "StudyDescription", "Modality"]
 
+# Now help me in adding typing hints to the following code
 
-
-
-READ_MAPPER = {
-    'Patient ID' : 'PatientID',
-    'Patient Name' : 'PatientName',
-    'StudyInstanceUID' : 'StudyInstanceUID',
-}
-
-CUSTOM_SEARCH_DATA = [
-    [12345, 'ABC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-    [12345, 'DBC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-    [12345, 'ABC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-    [12345, 'ABC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-    [12345, 'ABC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-    [12345, 'ABC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-    [12345, 'ABC', '123456', 'CT', '09/03/1969', '03:00', 'Test'],
-
-]
-
-
-
-class MultiSelectComboBox(wx.ComboCtrl):
-    def __init__(self, parent, choices, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-        
-        # Set up the ComboCtrl
-        self.choices = choices
-        self.SetPopupMaxHeight(200)  # Set maximum height of the popup
-        self.SetHint("Select options...")  # Set default hint text
-
-        # Set up the popup CheckListBox
-        self.popup = wx.CheckListBox(self)
-        self.popup.Bind(wx.EVT_LISTBOX, self._on_popup_select)
-        self.popup.Bind(wx.EVT_KILL_FOCUS, self._on_popup_hide)
-        self.popup.Bind(wx.EVT_CHECKLISTBOX, self._on_popup_check)
-        
-        # Initialize the selected items
-        self.selected = []
-        
-        # Set up the event handlers
-        self.Bind(wx.EVT_TEXT, self._on_text_change)
-        self.Bind(wx.EVT_COMBOBOX_DROPDOWN, self._on_popup_show)
-        
-    def _on_popup_show(self, evt):
-        """Shows the popup CheckListBox."""
-        self.popup.Clear()
-        self.popup.AppendItems(self.choices)
-        self.popup.SetCheckedItems([i for i, c in enumerate(self.choices) if c in self.selected])
-        self.Popup()
-        
-    def _on_popup_hide(self, evt):
-        """Hides the popup CheckListBox."""
-        self.Dismiss()
-        
-    def _on_popup_select(self, evt):
-        """Handles a selection in the popup CheckListBox."""
-        self.selected = [self.popup.GetString(i) for i in self.popup.GetCheckedItems()]
-        self.SetValue(", ".join(self.selected) if self.selected else "")
-        self.Dismiss()
-        self.SetInsertionPointEnd()
-        self.SetSelection(-1, -1)
-        
-    def _on_popup_check(self, evt):
-        """Handles a checkbox click in the popup CheckListBox."""
-        self.selected = [self.popup.GetString(i) for i in self.popup.GetCheckedItems()]
-        
-    def _on_text_change(self, evt):
-        """Updates the selected items based on the current text value."""
-        text = self.GetValue().lower()
-        self.selected = [c for c in self.choices if text in c.lower()]
-        
-    def GetSelections(self):
-        """Returns a list of the currently selected items."""
-        return self.selected
-
-
-    # def Create(self, parent, locations):
-    #     self.cc =wx.CheckListBox(parent, choices=locations)
-    #     self.cc.SetCheckedItems([0])  # Set the default selection to "All PACS Location"
-    #     return True
-
-
-class ChoiceCtrlPopup(wx.ComboPopup):
-
-    def __init__(self):
-        wx.ComboPopup.__init__(self)
-        self.cc = None
+class Browse(wx.Frame):
     
-    def Create(self, parent, locations):
-        self.cc =wx.CheckListBox(parent, choices=locations)
-        self.cc.SetCheckedItems([0])  # Set the default selection to "All PACS Location"
-        return True
-    
-    def Init(self):
-        self.value = -1
-        self.curitem = -1
-    
-    def GetControl(self):
-        return self.cc
-    
-    def OnPopup(self):
-        wx.ComboPopup.OnPopup(self)
-    
-
-class Frame1(wx.Frame):
-    
-    def __init__(self, title="Browse and Download", size=(800, 550)):
+    def __init__(self, title:str ="Browse and Download", size:tuple=(800, 550)) -> None:
         wx.Frame.__init__(self, None, -1, title, size=size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
         self.panel = wx.Panel(self, wx.ID_ANY, size=size)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
@@ -153,6 +41,7 @@ class Frame1(wx.Frame):
         self.main_layout.Add(self.create_show_search_result([]), 1, wx.EXPAND | wx.ALL, 1)
         self.main_layout.Add(self.create_image_details(size = (-1,130)), 1, wx.EXPAND | wx.ALL, 1)
         self.main_layout.Add(self.create_footer(),1, wx.RIGHT, 1)
+
 
     def create_select_box(self, locations, cur_selection=0, **kwargs):
         combo = wx.ComboBox(self.panel, choices=locations, style =wx.CB_DROPDOWN | wx.CB_SORT)
@@ -274,7 +163,6 @@ class Frame1(wx.Frame):
             search_img_table.AppendRows(numRows=1)
             for col_nu in range(search_img_table.GetNumberCols()):
                 cols_name = search_img_table.GetColLabelValue(col_nu)
-                #cols_name = READ_MAPPER.get(cols_name, cols_name)
                 cell_value = str(values.get(cols_name, ''))
                 
                 search_img_table.SetCellValue( max(0, search_img_table.GetNumberRows()-1), col_nu, cell_value )
@@ -283,30 +171,6 @@ class Frame1(wx.Frame):
                                 
         
 
-    def on_search(self, event, **kwargs):
-        # get event object
-        # get the value of the event object
-
-        if kwargs.get('obj'):
-            obj = kwargs.get('obj')
-        else:
-            obj = event.GetEventObject()
-        value = obj.GetValue()
-        print(value)
-        # now we wanna  clear the table
-        search_img_table = self.result_table
-        # now we wanna delete existing rows
-        if search_img_table.GetNumberRows() > 0:
-            search_img_table.DeleteRows(0, numRows=search_img_table.GetNumberRows())
-        # now let's add the value
-        tables_data = CUSTOM_SEARCH_DATA
-        for i in range(len(tables_data)):
-            values = tables_data[i]
-            search_img_table.AppendRows(numRows=1)
-            for col_nu in range(search_img_table.GetNumberCols()):
-                    # get label of column
-                    cols_name = search_img_table.GetColLabelValue(col_nu)
-                    search_img_table.SetCellValue( max(0, search_img_table.GetNumberRows()-1), col_nu, str(values[col_nu]) )
 
 
     def on_clear(self, event, obj):
@@ -372,9 +236,9 @@ class Frame1(wx.Frame):
         main_sizer.Add(self.pacs_location, 0, wx.ALL, 5)
 
         # modalitites
-        self.modalities_list = ["All Modalities", "CT", "MR", "US", "CR", "DX", "MG", "NM", "OT", "PT", "RF", "SC", "XA", "XC"]
-        self.modalities = self.create_select_box(self.modalities_list, 0)
-        main_sizer.Add(self.modalities, 0, wx.ALL, 5)
+        # self.modalities_list = ["All Modalities", "CT", "MR", "US", "CR", "DX", "MG", "NM", "OT", "PT", "RF", "SC", "XA", "XC"]
+        # self.modalities = self.create_select_box(self.modalities_list, 0)
+        # main_sizer.Add(self.modalities, 0, wx.ALL, 5)
 
 
 
@@ -457,7 +321,6 @@ class Frame1(wx.Frame):
         box = wx.StaticBox(self.panel, label='')
         main_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         cols_list = COLS # ["Patient ID", "Patient Name", "Accession Number", "Modality", "Study Date", "Study Time", "Study Description"]
-        arr = CUSTOM_SEARCH_DATA
         self.img_details_table= self.create_table([], cols_list, size= size)
         main_sizer.Add(self.img_details_table, 1, wx.EXPAND | wx.ALL, 5)
         return main_sizer
@@ -482,7 +345,7 @@ class Frame1(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App()
-    frame = Frame1()
+    frame = Browse()
     frame.Show()
     app.MainLoop()
 
