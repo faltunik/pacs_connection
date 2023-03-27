@@ -1,0 +1,8 @@
+1. For Now, we are only letting users to search browse from all locations, but we will let them select set of locations.
+2. Same with Modality
+
+# ADD ValidityChecker for every field
+
+# BUG:
+#1. Whenver I delete the Items, windows get closed.
+#2. I have to manully enter the Enter button in order to make Add Button Active

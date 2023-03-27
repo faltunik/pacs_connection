@@ -5,6 +5,7 @@ import wx
 import wx.grid as gridlib
 import json
 from constants import INV_PORT, INV_AET, INV_HOST
+from helpers import is_valid_ip_address, is_valid_port
 
 
 
@@ -75,7 +76,6 @@ class Configuration(wx.Frame):
             return []
 
 
-    
     def create_ui(self):
         self.create_client_info_sizer = self.create_client_info()
         self.main_layout.Add(self.create_client_info_sizer, 0, wx.EXPAND | wx.ALL, 1)
@@ -242,7 +242,8 @@ class Configuration(wx.Frame):
             self.grid_table.AutoSize()
 
         for i, row in enumerate(array):
-            for j, val in enumerate(row):
+            for j, col_tag in enumerate(cols_list):
+                val = row.get(col_tag, '')
                 self.grid_table.SetCellValue(i, j, val)
         self.grid_table.HideRowLabels()
         
@@ -305,7 +306,7 @@ class Configuration(wx.Frame):
             print(e)
 
         self.deselect_rows_pacs(initiator)
-        reactor.Disable()
+        #reactor.Disable()
         print(self.configured_pacs)
 
     def verify_pacs(self, event, initiator):
@@ -391,8 +392,39 @@ class Configuration(wx.Frame):
 
         return main_sizer
     
+    def validators(self, ip_address_value, port_value, ae_title_value, description_value):
+        if not is_valid_port(port_value) :
+            raise ValueError('Invalid Port')
+
+        if any(port_value == obj.get('PORT') for obj in self.configured_pacs):
+            raise ValueError('Port already exists')
+        
+        if not is_valid_ip_address(ip_address_value):
+            raise ValueError('Invalid IP Address')
+        
+        if any(ip_address_value == obj.get('IP ADDRESS') for obj in self.configured_pacs):
+            raise ValueError('IP Address already exists')
+
+        return True
+
+    
     def add_pacs_server(self,evt,ip_address_textbox, port_textbox, ae_title_textbox, description_textbox):
         #TODO: Add Checker to verify if the data are valid or not
+        ip_address_value = ip_address_textbox.GetValue()
+        port_value = port_textbox.GetValue()
+        ae_title_value = ae_title_textbox.GetValue()
+        description_value = description_textbox.GetValue()
+        try:
+            print('REACHED HERE 412')
+            self.validators(ip_address_value, port_value, ae_title_value, description_value)
+        except ValueError as ve:
+            # show the error and return
+            print('VALUE ERROR')
+            errordlg = wx.MessageDialog(self, f"Invalid: {ve}", f"Error: {ve}", wx.OK | wx.ICON_ERROR)
+            errordlg.ShowModal()
+            time.sleep(3)
+            errordlg.Destroy()
+            return
         dlg = CustomDialog(self, "Do you want to add this item?")
         result = dlg.ShowModal()
         valid = True  # need to create_function to verify if the data are valid
@@ -403,16 +435,19 @@ class Configuration(wx.Frame):
                 port_value = port_textbox.GetValue()
                 ae_title_value = ae_title_textbox.GetValue()
                 description_value = description_textbox.GetValue()
+
                 configured_pacs_columns = ['IP ADDRESS', 'PORT', 'AE TITLE', 'Description', 'Retrievel Protocol', 'Preferred Transfer Syntax']
-                new_data = [ip_address_value, port_value, ae_title_value, description_value, 'DICOM', 'Implicit VR Little Endian']
+                new_data = {'IP ADDRESS': ip_address_value, 'PORT': port_value, 'AE TITLE': ae_title_value, 'Description': description_value, 'Retrievel Protocol': 'DICOM', 'Preferred Transfer Syntax': 'Implicit VR Little Endian'}
+                #new_data = [ip_address_value, port_value, ae_title_value, description_value, 'DICOM', 'Implicit VR Little Endian']
                 self.configured_pacs.append(new_data)
                 self.pacs_table.AppendRows(1)
                 for col_nu in range(self.pacs_table.GetNumberCols()):
-                    self.pacs_table.SetCellValue(self.pacs_table.GetNumberRows()-1, col_nu, new_data[col_nu])
+                    col_tag = configured_pacs_columns[col_nu]
+                    self.pacs_table.SetCellValue(self.pacs_table.GetNumberRows()-1, col_nu, new_data.get(col_tag, ''))
 
-                with open('pcv1_file.json', 'w') as file:
-                    print('Writing to json file')
-                    json.dump(self.pacs_data , file)
+                # with open('pcv1_file.json', 'w') as file:
+                #     print('Writing to json file')
+                #     json.dump(self.pacs_data , file)
 
             except Exception as e:
                 print(e)
@@ -447,7 +482,11 @@ class Configuration(wx.Frame):
         result = dlg.ShowModal()
         if result == wx.ID_YES:
             print('save')
+            with open('pcv1_file.json', 'w') as file:
+                print('Writing to json file')
+                json.dump(self.pacs_data , file)
             self.Close()
+
         dlg.Destroy()
     
     def on_cancel(self, event):

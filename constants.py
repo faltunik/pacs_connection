@@ -1,0 +1,4 @@
+
+INV_PORT = 5050
+INV_AET = 'INVESALIUS'
+INV_HOST = 'localhost'
