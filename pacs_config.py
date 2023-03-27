@@ -3,25 +3,15 @@
 import time
 import wx
 import wx.grid as gridlib
+import wx.lib.agw.pybusyinfo as PBI
 import json
 from constants import INV_PORT, INV_AET, INV_HOST
-from helpers import is_valid_ip_address, is_valid_port
+from helpers import is_valid_ip_address, is_valid_port, json_serial
 
 
 
-def json_serial(filename, mode='r'):
-    try:
-        with open(filename, mode) as file:
-            return json.load(file)
-    except Exception as e:
-        print("Error: ", e)
-        return []
-
-
-pacs_config_data  = json_serial('pcv1_file.json')
-CONFIGURED_PACS = pacs_config_data['configured_pacs']
-
-
+PACS_CONFIG_DATA  = json_serial('pcv1_file.json')
+CONFIGURED_PACS = PACS_CONFIG_DATA['configured_pacs']
 
 class CustomDialog(wx.Dialog):
     def __init__(self, parent, message):
@@ -51,7 +41,7 @@ class Configuration(wx.Frame):
         wx.Frame.__init__(self, None, -1, "PACS Configuration", size=size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
         self.panel = wx.Panel(self, wx.ID_ANY, size=size)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
-        self.pacs_data = self.json_serial('pcv1_file.json')
+        self.pacs_data = PACS_CONFIG_DATA
         self.configured_pacs = self.pacs_data['configured_pacs']
         self.menu_options = self.pacs_data['menu_options']
         self.default_settings = self.pacs_data['default_settings']
@@ -66,15 +56,6 @@ class Configuration(wx.Frame):
             self.sl = wx.StaticLine(self.panel, 2, style=wx.LI_VERTICAL)
         self.main_layout.Add(self.sl, 0, wx.EXPAND | wx.ALL, 1)
 
-    @staticmethod
-    def json_serial(filename, mode='r'):
-        try:
-            with open(filename, mode) as file:
-                return json.load(file)
-        except Exception as e:
-            print("Error: ", e)
-            return []
-
 
     def create_ui(self):
         self.create_client_info_sizer = self.create_client_info()
@@ -87,7 +68,6 @@ class Configuration(wx.Frame):
         self.create_footer_sizer = self.create_footer()
         self.main_layout.Add(self.create_footer_sizer, 0, wx.RIGHT | wx.EXPAND | wx.ALL, 1)
 
-        
         return
 
     def create_label_textbox(self, label='', text_box_value = '', enable=True, textbox_needed=1, horizontal=0, **kwargs):
@@ -159,7 +139,6 @@ class Configuration(wx.Frame):
     
     @staticmethod
     def showmsg(t):
-        import wx.lib.agw.pybusyinfo as PBI
         app = wx.App(redirect=False)
         msg = 'PACS Details are Deleted'
         title = 'Message!'
@@ -168,7 +147,7 @@ class Configuration(wx.Frame):
         return d  
     
     
-    def on_advance_setting_click(self, event, obj):
+    def on_advance_setting_click(self, event):
         # get the button position and size
         print("event obj details: ", event.GetEventObject().__dict__)
         id_selected = event.GetId()
@@ -177,7 +156,7 @@ class Configuration(wx.Frame):
         print(event_obj.GetLabel() )
         pos = self.advanced_settings_button.GetPosition()
         size = self.advanced_settings_button.GetSize()
-        self.panel.PopupMenu(obj, pos + (0, size[1]))
+        self.panel.PopupMenu(self.create_menu('advanced_settings'), pos + (0, size[1]))
 
     def create_client_info(self):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -192,7 +171,7 @@ class Configuration(wx.Frame):
 
         # Advanced Settings Button
         self.advanced_settings_button = self.create_button(label='Advanced Settings', enable=True)
-        self.advanced_settings_button.Bind(wx.EVT_BUTTON, lambda event: self.on_advance_setting_click(event, self.create_menu('advanced_settings')))
+        self.advanced_settings_button.Bind(wx.EVT_BUTTON, self.on_advance_setting_click)
         main_sizer.Add(self.advanced_settings_button, 0, wx.EXPAND | wx.ALL, 5)
         #TODO: Find which button is clicked and also mark earlier ticked option
         return main_sizer
