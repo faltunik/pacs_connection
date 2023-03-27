@@ -1,3 +1,4 @@
+from typing import Any
 import wx
 import wx.adv as wxadv
 import wx.grid as gridlib
@@ -21,20 +22,20 @@ for i, pacs_obj in enumerate(CONFIGURED_PACS):
 class Browse(wx.Frame):
     
     def __init__(self, title:str ="Browse and Download", size:tuple=(800, 550)) -> None:
-        wx.Frame.__init__(self, None, -1, title, size=size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
+        wx.Frame.__init__(self, None, -1, title, size =size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
         self.panel = wx.Panel(self, wx.ID_ANY, size=size)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
         self.create_ui()
         self.panel.SetSizer(self.main_layout)
 
-    def create_line(self, horizontal=1):
+    def create_line(self, horizontal:int =1) -> None:
         if horizontal:
             self.sl = wx.StaticLine(self.panel, 1, style=wx.LI_HORIZONTAL)
         else:
             self.sl = wx.StaticLine(self.panel, 2, style=wx.LI_VERTICAL)
         self.main_layout.Add(self.sl, 0, wx.EXPAND | wx.ALL, 1)
 
-    def create_ui(self):
+    def create_ui(self) -> None:
         self.main_layout.Add(self.create_header_1(), 0, wx.EXPAND | wx.ALL, 1)
         self.create_line()
         self.main_layout.Add(self.create_header_2(), 0, wx.EXPAND | wx.ALL, 1)
@@ -43,14 +44,19 @@ class Browse(wx.Frame):
         self.main_layout.Add(self.create_footer(),1, wx.RIGHT, 1)
 
 
-    def create_select_box(self, locations, cur_selection=0, **kwargs):
+    def create_select_box(self, locations:list, cur_selection:int=0, **kwargs) -> wx.ComboBox:
         combo = wx.ComboBox(self.panel, choices=locations, style =wx.CB_DROPDOWN | wx.CB_SORT)
         combo.SetSelection(cur_selection)
         combo.Bind(wx.EVT_COMBOBOX_CLOSEUP, lambda event: self.on_selection_X(event, combo, **kwargs))
         return combo
-    
-    def on_selection_X(self, event, obj, **kwargs):
+
+    #event= wx._core.CommandEvent'
+    # event: wx.Event
+    def on_selection_X(self, event:wx.Event, obj: Any, **kwargs) ->None:
         selected_text = obj.GetStringSelection()
+
+        print("56:", type(event))
+        print("57:", type(obj))
         print(selected_text)
         idx = obj.FindString(selected_text)
         print(idx)
@@ -65,23 +71,16 @@ class Browse(wx.Frame):
                     reactor.Disable()
 
 
-    def create_select_date(self):
-        pass
 
-    def popup(self, event):
+    def popup(self, event:wx.Event)->None:
         pop = Configuration()
         pop.Show()
 
-    def on_close(self, event):
+    def on_close(self, event:wx.Event)->None:
         self.Enable()
         event.Skip()
 
-    def on_date_changed(self, event):
-        # print("Date changed")
-        # cur_date = obj.GetValue()
-        # print(cur_date)
-        # date = cur_date
-        # print(date.FormatISODate())
+    def on_date_changed(self, event:wx.Event)->None:
 
         try:
             print(event.GetEventObject())
@@ -91,24 +90,16 @@ class Browse(wx.Frame):
         except Exception as e:
             print(f"ERROR IS: {e}")
 
-    def search_result(self, event, **kwargs):
-        # we want following information
-        # Data Type User has entered: patient id, etc
-        # Modalities Box Selections
-        # Date Range
-        # PACS Location
-        # value user has typed in the search box
-
+    def search_result(self, event:wx.Event, **kwargs)->None:
+        """
+        This function is called when the search button is clicked or Enter is pressed
+        It Make CFIND Request to the PACS and get the result
+        """
 
         self.searching_text.Show()
         print("searching....", self.searching_text.IsShown())
-        # get the value of the search box
-        search_value = kwargs.get('obj').GetValue()
-        # find uner which it : Patient ID, Patient Name, Accession number
-        search_type = self.search_type.GetStringSelection()
 
-        # get the value of the modalities box
-        modalities = self.modalities.GetTextSelection()
+        # modalities = self.modalities.GetTextSelection()
 
         # get the value of the date range
         start_date_range = self.start_date_range.GetValue()
@@ -132,9 +123,8 @@ class Browse(wx.Frame):
         # get the value of the data type
         data_type = self.search_type.GetStringSelection()
         data_type = data_type.replace(' ', '')
-        print(data_type)
-        print("DATA TYPE: ", data_type)
-        print("245", pacs_location)
+        search_value = kwargs.get('obj').GetValue()
+
         search_filter = {
             'PatientID': '*',
             'PatientName': '*',
@@ -170,13 +160,10 @@ class Browse(wx.Frame):
         self.searching_text.Hide()
                                 
         
-
-
-
-    def on_clear(self, event, obj):
+    def on_clear(self, event:wx.Event, obj:Any):
         obj.SetValue("")
 
-    def on_selection(self, event):
+    def on_selection(self, event:wx.Event):
         obj = event.GetEventObject()
         print(obj)
         row_id = event.GetRow()
@@ -190,22 +177,12 @@ class Browse(wx.Frame):
             value = obj.GetCellValue(row_id, col)
             d[label] = value
             print(label, value)
-        
-        print(d)
 
-        # so now we wanna clear the previous image details and wanna show this images detail
-
-        # now we wanna show this to the image details panel
-        # get the image details panel
-        image_details_panel = self.img_details_table # self.main_layout.GetItem(3).GetWindow()
-        # get the image details panel sizer
-        # image_details_sizer = image_details_panel.GetSizer()
-        # now enter the dictionary named d items into this table
+        image_details_panel = self.img_details_table
         if image_details_panel.GetNumberRows() >0:
             image_details_panel.DeleteRows(0)
         image_details_panel.AppendRows(1)
         for col_nu in range(image_details_panel.GetNumberCols()):
-            # get the label of the column
             col_label = image_details_panel.GetColLabelValue(col_nu)
             print(d.get(col_label, "TEST DATA"))
             image_details_panel.SetCellValue(image_details_panel.GetNumberRows()-1, col_nu, d.get(col_label, "TEST DATA"))
@@ -213,16 +190,6 @@ class Browse(wx.Frame):
 
 
     def create_header_1(self):
-        """
-        TODO:
-        Add setting icon in the pacs config button
-        Make UI better and response
-        Show Pacs Config panel when selected pacs config button
-        Let user select multiple options from pacs location and modalities
-        Print the user selected options
-        Enable the start and end data selection  only when custom date is selected
-        Change dates of datebox accordingly when user select last dat, yesterdat etc
-        """
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         #pacs configuration button
@@ -290,7 +257,7 @@ class Browse(wx.Frame):
 
         return main_sizer
     
-    def create_table(self, array, cols_list, size= (-1,200)):
+    def create_table(self, array:list, cols_list:list, size:tuple= (-1,200)) -> gridlib.Grid:
         self.grid_table = gridlib.Grid(self.panel, wx.ID_ANY, size=size)
         self.grid_table.CreateGrid(len(array), len(cols_list))
         self.grid_table.SetDefaultColSize(150)
@@ -306,9 +273,8 @@ class Browse(wx.Frame):
         self.grid_table.SetScrollbars(100, 100, 10, 10)
         return self.grid_table
     
-    # def fill_table(self, )
     
-    def create_show_search_result(self, arr):
+    def create_show_search_result(self, arr:list)-> wx.StaticBoxSizer:
         box = wx.StaticBox(self.panel, label='')
         main_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         cols_list = COLS
@@ -317,7 +283,7 @@ class Browse(wx.Frame):
         main_sizer.Add(self.result_table, 1, wx.EXPAND | wx.ALL, 5)
         return main_sizer
     
-    def create_image_details(self, size= (-1,200)):
+    def create_image_details(self, size:tuple= (-1,200))-> wx.StaticBoxSizer:
         box = wx.StaticBox(self.panel, label='')
         main_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         cols_list = COLS # ["Patient ID", "Patient Name", "Accession Number", "Modality", "Study Date", "Study Time", "Study Description"]
@@ -325,7 +291,7 @@ class Browse(wx.Frame):
         main_sizer.Add(self.img_details_table, 1, wx.EXPAND | wx.ALL, 5)
         return main_sizer
     
-    def create_footer(self):
+    def create_footer(self)-> wx.BoxSizer:
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         #buttons
