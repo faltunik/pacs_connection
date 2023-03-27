@@ -8,23 +8,30 @@ from helpers import json_serial
 from constants import COLS
 
 
+def get_pacs_details():
+    pacs_config_data  = json_serial('pcv1_file.json')
+    configured_pacs = pacs_config_data['configured_pacs']
+    configured_pacs_mapper = {}
+    all_pacs = []
+    for i, pacs_obj in enumerate(configured_pacs):
+        configured_pacs_mapper[pacs_obj['AE TITLE']] = pacs_obj
+        all_pacs.append(pacs_obj['AE TITLE'])
+    return configured_pacs_mapper, all_pacs, configured_pacs
 
-pacs_config_data  = json_serial('pcv1_file.json')
-CONFIGURED_PACS = pacs_config_data['configured_pacs']
-CONFIGURED_PACS_MAPPER = {}
-ALL_PACS =[]
-for i, pacs_obj in enumerate(CONFIGURED_PACS):
-    CONFIGURED_PACS_MAPPER[pacs_obj['AE TITLE']] = pacs_obj
-    ALL_PACS.append(pacs_obj['AE TITLE'])
+
 
 # Now help me in adding typing hints to the following code
 
 class Browse(wx.Frame):
-    
+
+    CONFIGURED_PACS_MAPPER, ALL_PACS, CONFIGURED_PACS = get_pacs_details()
     def __init__(self, title:str ="Browse and Download", size:tuple=(800, 550)) -> None:
         wx.Frame.__init__(self, None, -1, title, size =size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
         self.panel = wx.Panel(self, wx.ID_ANY, size=size)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
+        self.configured_pacs_mapper = self.CONFIGURED_PACS_MAPPER
+        self.all_pacs = self.ALL_PACS
+        self.configured_pacs = self.CONFIGURED_PACS
         self.create_ui()
         self.panel.SetSizer(self.main_layout)
 
@@ -50,8 +57,7 @@ class Browse(wx.Frame):
         combo.Bind(wx.EVT_COMBOBOX_CLOSEUP, lambda event: self.on_selection_X(event, combo, **kwargs))
         return combo
 
-    #event= wx._core.CommandEvent'
-    # event: wx.Event
+
     def on_selection_X(self, event:wx.Event, obj: Any, **kwargs) ->None:
         selected_text = obj.GetStringSelection()
 
@@ -75,10 +81,30 @@ class Browse(wx.Frame):
     def popup(self, event:wx.Event)->None:
         pop = Configuration()
         pop.Show()
+        pop.Bind(wx.EVT_CLOSE, self.on_close)
+        #check if This window is closed
+        # pop.Bind(wx.EVT_CLOSE, self.on_close)
+
+
+
+
+
 
     def on_close(self, event:wx.Event)->None:
-        self.Enable()
+        # clear the self.pacs_locations
+        obj = json_serial('pcv1_file.json')
+        self.configured_pacs_mapper, self.all_pacs, self.configured_pacs = get_pacs_details()
+        self.pacs_location.Clear()
+        for i, pacs in enumerate(self.all_pacs):
+            #self.pacs_location.Insert(pacs, i)
+            self.pacs_location.Append(pacs)
+        self.pacs_location.SetSelection(0)
+        print("on close")
+
+
         event.Skip()
+
+        
 
     def on_date_changed(self, event:wx.Event)->None:
 
@@ -132,7 +158,7 @@ class Browse(wx.Frame):
         }
         search_filter[data_type] = search_value
 
-        host, port = CONFIGURED_PACS_MAPPER.get(pacs_location).get('IP ADDRESS'), int(CONFIGURED_PACS_MAPPER.get(pacs_location).get('PORT'))
+        host, port = self.configured_pacs_mapper.get(pacs_location).get('IP ADDRESS'), int(self.configured_pacs_mapper.get(pacs_location).get('PORT'))
 
         cfind_obj = CFind(host=host, port = port)
         result = cfind_obj.make_request(aet='', aet_title='',StudyDate= date_range, pacs_location=pacs_location, PatientID= search_filter.get('PatientID', '*'), PatientName= search_filter.get('PatientName', '*'), AccessionNumber=search_filter.get('AccessionNumber', '*'))
@@ -198,7 +224,7 @@ class Browse(wx.Frame):
         main_sizer.Add(pacs_config_button, 0, wx.ALL, 5)
 
         # pacs location selector
-        self.pacs_locations_list = ALL_PACS
+        self.pacs_locations_list = self.all_pacs
         self.pacs_location = self.create_select_box(self.pacs_locations_list, 0)
         main_sizer.Add(self.pacs_location, 0, wx.ALL, 5)
 
