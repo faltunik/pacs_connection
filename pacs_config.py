@@ -138,9 +138,9 @@ class Configuration(wx.Frame):
 
     
     @staticmethod
-    def showmsg(t):
+    def showmsg(t, msgs= 'PACS Details are Deleted'):
         app = wx.App(redirect=False)
-        msg = 'PACS Details are Deleted'
+        msg = msgs
         title = 'Message!'
         d = PBI.PyBusyInfo(msg, title=title)
         time.sleep(t)
@@ -149,11 +149,8 @@ class Configuration(wx.Frame):
     
     def on_advance_setting_click(self, event):
         # get the button position and size
-        print("event obj details: ", event.GetEventObject().__dict__)
         id_selected = event.GetId()
         event_obj = event.GetEventObject()
-        print("Option =", id_selected)
-        print(event_obj.GetLabel() )
         pos = self.advanced_settings_button.GetPosition()
         size = self.advanced_settings_button.GetSize()
         self.panel.PopupMenu(self.create_menu('advanced_settings'), pos + (0, size[1]))
@@ -224,6 +221,7 @@ class Configuration(wx.Frame):
             for j, col_tag in enumerate(cols_list):
                 val = row.get(col_tag, '')
                 self.grid_table.SetCellValue(i, j, val)
+                self.grid_table.SetCellOverflow(i,j,True)
         self.grid_table.HideRowLabels()
         
         return self.grid_table
@@ -267,9 +265,10 @@ class Configuration(wx.Frame):
     def delete_row(self, event, initiator, reactor):
         try:
             row_id = initiator.GetSelectedRows()[0]
+            print('row_id: ', row_id)
             dialog = CustomDialog(self, 'Are you sure you want to delete this IP configuration?')
             if dialog.ShowModal() == wx.ID_YES:
-                self.showmsg(3)
+                self.showmsg(3, 'PACS Configuration Deleted Successfully')
                 initiator.DeleteRows(row_id)
                 self.configured_pacs.pop(row_id)
                 with open('pcv1_file.json', 'w') as file:
@@ -280,12 +279,18 @@ class Configuration(wx.Frame):
             self.port_textbox.SetValue('')
             self.ae_title_textbox.SetValue('')
             self.description_textbox.SetValue('')
+
         except Exception as e:
-            self.show_error_message('Please Select a row to delete')
+            #self.show_error_message('Please Select a row to delete')
+            self.showmsg(3, 'Please Select a row to delete')
             print(e)
 
         self.deselect_rows_pacs(initiator)
-        #reactor.Disable()
+        # self.delete_pacs_button.Disable()
+        # try:
+        #     reactor.Disable()
+        # except Exception as e:
+        #     print("ERROR WHILE DISABLING DELETE BUTTON IS: ", e)
         print(self.configured_pacs)
 
     def verify_pacs(self, event, initiator):
@@ -375,14 +380,12 @@ class Configuration(wx.Frame):
         if not is_valid_port(port_value) :
             raise ValueError('Invalid Port')
 
-        if any(port_value == obj.get('PORT') for obj in self.configured_pacs):
-            raise ValueError('Port already exists')
         
         if not is_valid_ip_address(ip_address_value):
             raise ValueError('Invalid IP Address')
         
-        if any(ip_address_value == obj.get('IP ADDRESS') for obj in self.configured_pacs):
-            raise ValueError('IP Address already exists')
+        if any(ip_address_value == obj.get('IP ADDRESS') for obj in self.configured_pacs) and any(port_value == obj.get('PORT') for obj in self.configured_pacs) :
+            raise ValueError('Same IP Address and Port number already exists')
 
         return True
 
@@ -477,15 +480,18 @@ class Configuration(wx.Frame):
         dlg.Destroy()
 
     def show_error_message(self, message= 'Some Error Occured'):
+        app = wx.App()
         msg_dlg = wx.MessageDialog(self, message, "Error", wx.OK | wx.ICON_ERROR)
         msg_dlg.ShowModal()
-        msg_dlg.Destroy()
+        # msg_dlg.Destroy()
 
     def on_text_enter(self, event):
         print('enter')
         if self.ip_address_textbox.GetValue() != '' and self.port_textbox.GetValue() != '' and self.ae_title_textbox.GetValue() != '' :
             self.ip_add_button.Enable(True)
             self.ip_edit_button.Enable(True)
+    
+    
 
 
 

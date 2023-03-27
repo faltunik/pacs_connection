@@ -6,3 +6,8 @@
 # BUG:
 #1. Whenver I delete the Items, windows get closed.
 #2. I have to manully enter the Enter button in order to make Add Button Active
+
+
+#Let's Add the following features:
+1. Update PACS Location as soon as User Add New PACS Location
+

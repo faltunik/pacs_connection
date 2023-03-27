@@ -6,9 +6,10 @@ import datetime
 from pynetdicom import AE, debug_logger
 from pynetdicom.sop_class import PatientRootQueryRetrieveInformationModelFind
 
+from constants import COLS
+
 debug_logger()
 
-COLS = ["PatientName", "PatientID", "StudyInstanceUID", "SeriesInstanceUID", "StudyDate", "StudyTime", "AccessionNumber", "Modality", "PatientBirthDate", "PatientSex", "PatientAge", "IssuerOfPatientID", "Retrieve AE Title", "StudyDescription"]
 
 def date_formater(s):
     year = s[0:4]
@@ -38,11 +39,10 @@ def serializer(obj):
 
 class CFind:
     """
-    TODO: Search via patient name and get all details like patient id, patient name, study date, dob etc
+    TODO: Search via patient name/id or accession nu and get all details like patient id, patient name, study date, dob etc
     """
 
-    def __init__(self, host, port, **kwargs):
-        print(f"Host : {host} and port: {port}")
+    def __init__(self, host:str, port:int, **kwargs) ->None:
         self.host = host
         self.port = port
         self.ae = AE()
@@ -54,19 +54,18 @@ class CFind:
             'SERIES': self.create_series_identifier,
         }
 
-    def make_request(self, **kwargs):
+    def make_request(self, **kwargs) -> list:
         self.ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
         self.assoc = self.ae.associate(self.host, self.port)
         final_result = []
         if self.assoc.is_established:
-            print('HERE 25')
             final_result = self.execute_search(**kwargs)
         
         self.assoc.release()
         
         return final_result
         
-    def create_patient_identifier(self, dataset, **kwargs):
+    def create_patient_identifier(self, dataset : Dataset, **kwargs) -> Dataset:
         dataset.PatientName = kwargs.get('PatientName', '*')
         dataset.PatientID = kwargs.get('PatientID', '*')
         dataset.PatientBirthDate = kwargs.get('PatientBirthDate', '19000101-99991231')
@@ -74,7 +73,7 @@ class CFind:
 
         return dataset
     
-    def create_study_identifier(self, dataset, **kwargs):
+    def create_study_identifier(self, dataset: Dataset, **kwargs) -> Dataset:
         #print(f'STUDY 52: Here we are with kwargs {kwargs} and dataset {dataset} ')
         dataset = self.create_patient_identifier(dataset, **kwargs)
         dataset.StudyInstanceUID = kwargs.get('StudyInstanceUID', '*')
@@ -88,13 +87,13 @@ class CFind:
         #dataset.InstitutionalDepartmentName = kwargs.get('InstitutionalDepartmentName', '*')
         return dataset
     
-    def create_series_identifier(self, dataset, **kwargs):
+    def create_series_identifier(self, dataset: Dataset, **kwargs) -> Dataset:
         dataset = self.create_study_identifier(dataset, **kwargs)
         dataset.SeriesInstanceUID = kwargs.get('SeriesInstanceUID', '*')
         dataset.Modality = kwargs.get('Modality', '*')
         return dataset
     
-    def create_identifier(self, dataset= None, **kwargs):
+    def create_identifier(self, dataset: Dataset= None, **kwargs) -> Dataset:
         if not dataset:
             dataset = Dataset()
         #print((kwargs), "71")
@@ -104,7 +103,7 @@ class CFind:
         return self.mapper[qr_lvl](dataset, **kwargs)
     
     
-    def create_identifier2(self, **kwargs):
+    def create_identifier2(self, **kwargs) -> Dataset:
         self.ds = Dataset()
         self.ds.QueryRetrieveLevel = kwargs.get('QueryRetrieveLevel', 'SERIES')
         if kwargs.get('QueryRetrieveLevel', 'PATIENT') == 'PATIENT':
@@ -130,7 +129,7 @@ class CFind:
 
         return self.ds
     
-    def get_user_input(self, **kwargs):
+    def get_user_input(self, **kwargs) -> dict:
         # convert kwargs into dict
         inputs = {}
         for k, v in kwargs.items():
@@ -138,26 +137,21 @@ class CFind:
         return inputs
 
 
-    def decode_response(self, identifier):
+    def decode_response(self, identifier: Dataset) -> dict:
         import collections
         tags = COLS
-        #print("identifier", identifier)
         d = collections.defaultdict()
         if not identifier: return {}
-        #print(dir(identifier))
         for tag in tags:
             if tag in identifier:
                 try:
-                    #print(f"{tag}: {identifier.get(tag)}")
                     d[tag] = identifier.get(tag)
                 except Exception as e:
                     print(e)
                     continue
-
-        #print("125 identifier", identifier, "dictionary", d)
         return d
     
-    def execute_search(self, **kwargs):
+    def execute_search(self, **kwargs) -> list:
         dataset = Dataset()
         #dataset.QueryRetrieveLevel = kwargs.get('QueryRetrieveLevel', 'PATIENT')
         kwargs['QueryRetrieveLevel'] = 'PATIENT'
@@ -189,8 +183,7 @@ class CFind:
         return final_result      
 
 
-
-    def send_cfind(self, dataset = Dataset(), **kwargs):
+    def send_cfind(self, dataset: Dataset = Dataset(), **kwargs) -> list:
         identifier = self.create_identifier(dataset, **kwargs)
         # print('HERE TYPE1',identifier, identifier.items(), type(identifier))
         #print(f"166: identifier: {identifier}")
