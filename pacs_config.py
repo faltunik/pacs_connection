@@ -1,12 +1,14 @@
 #TODO: Show Invesalius Icon in Frame
 
 import time
+from typing import Any
 import wx
 import wx.grid as gridlib
 import wx.lib.agw.pybusyinfo as PBI
 import json
 from constants import INV_PORT, INV_AET, INV_HOST
 from helpers import is_valid_ip_address, is_valid_port, json_serial
+from cecho import CEcho
 
 
 
@@ -37,7 +39,7 @@ class CustomDialog(wx.Dialog):
         self.EndModal(wx.ID_NO)
 
 class Configuration(wx.Frame):
-    def __init__(self, size= (600, 400)):
+    def __init__(self, size:tuple= (600, 400)) ->None:
         wx.Frame.__init__(self, None, -1, "PACS Configuration", size=size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
         self.panel = wx.Panel(self, wx.ID_ANY, size=size)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
@@ -49,7 +51,7 @@ class Configuration(wx.Frame):
         self.panel.SetSizer(self.main_layout)
         self.create_ui()
 
-    def create_line(self, horizontal=1):
+    def create_line(self, horizontal:int=1) ->None:
         if horizontal:
             self.sl = wx.StaticLine(self.panel, 1, style=wx.LI_HORIZONTAL)
         else:
@@ -57,7 +59,7 @@ class Configuration(wx.Frame):
         self.main_layout.Add(self.sl, 0, wx.EXPAND | wx.ALL, 1)
 
 
-    def create_ui(self):
+    def create_ui(self) -> None:
         self.create_client_info_sizer = self.create_client_info()
         self.main_layout.Add(self.create_client_info_sizer, 0, wx.EXPAND | wx.ALL, 1)
         self.create_line(horizontal=1)
@@ -70,7 +72,7 @@ class Configuration(wx.Frame):
 
         return
 
-    def create_label_textbox(self, label='', text_box_value = '', enable=True, textbox_needed=1, horizontal=0, **kwargs):
+    def create_label_textbox(self, label:str='', text_box_value:str = '', enable: bool=True, textbox_needed:int=1, horizontal:int=0, **kwargs) -> list:
 
         if horizontal:
             sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -104,7 +106,7 @@ class Configuration(wx.Frame):
         button.Enable(enable)
         return button
     
-    def create_menu(self,key):
+    def create_menu(self,key:str) -> wx.Menu:
         options = self.menu_options[key]
         menu = wx.Menu()
         for option in options:
@@ -126,7 +128,7 @@ class Configuration(wx.Frame):
                     # menu_item.Check(True)
         return menu
     
-    def on_menu_select(self, event):
+    def on_menu_select(self, event: wx.MenuEvent) -> None:
         selected_item_id = event.GetId()
         menu = event.GetEventObject()
         selected_item = menu.FindItemById(selected_item_id)
@@ -138,7 +140,7 @@ class Configuration(wx.Frame):
 
     
     @staticmethod
-    def showmsg(t, msgs= 'PACS Details are Deleted'):
+    def showmsg(t:int, msgs:str= 'PACS Details are Deleted') -> PBI.PyBusyInfo:
         app = wx.App(redirect=False)
         msg = msgs
         title = 'Message!'
@@ -147,7 +149,7 @@ class Configuration(wx.Frame):
         return d  
     
     
-    def on_advance_setting_click(self, event):
+    def on_advance_setting_click(self, event: wx.CommandEvent)->None:
         # get the button position and size
         id_selected = event.GetId()
         event_obj = event.GetEventObject()
@@ -155,7 +157,7 @@ class Configuration(wx.Frame):
         size = self.advanced_settings_button.GetSize()
         self.panel.PopupMenu(self.create_menu('advanced_settings'), pos + (0, size[1]))
 
-    def create_client_info(self):
+    def create_client_info(self) ->None:
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         #port
@@ -173,7 +175,7 @@ class Configuration(wx.Frame):
         #TODO: Find which button is clicked and also mark earlier ticked option
         return main_sizer
     
-    def create_header_label(self):
+    def create_header_label(self) -> wx.BoxSizer:
         main_header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         label_sizer = wx.BoxSizer(wx.VERTICAL)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -207,7 +209,7 @@ class Configuration(wx.Frame):
 
         return main_header_sizer
     
-    def create_table(self, array, cols_list):
+    def create_table(self, array:list, cols_list:list)->gridlib.Grid:
         self.grid_table = gridlib.Grid(self.panel, wx.ID_ANY, size = (500, 100))
         self.grid_table.CreateGrid(len(array), len(cols_list))
         self.grid_table.AutoSizeColLabelSize(0)
@@ -226,7 +228,7 @@ class Configuration(wx.Frame):
         
         return self.grid_table
 
-    def on_select(self, event, initiator, reactor_list):
+    def on_select(self, event: Any, initiator:Any, reactor_list:list) ->None:
         # Enable the button if a row is selected
         row_id = event.GetRow()
         print(row_id)
@@ -244,7 +246,7 @@ class Configuration(wx.Frame):
         self.ip_add_button.Enable()
         self.ip_edit_button.Enable()
 
-    def on_up(self, event, initiator, reactor):
+    def on_up(self, event:Any, initiator:Any, reactor:Any) -> None:
         row_id = initiator.GetSelectedRows()[0]
         if row_id > 0:
             # initiator.MoveRow(row_id, row_id-1)
@@ -255,14 +257,14 @@ class Configuration(wx.Frame):
         # else:
         #     reactor.Disable()
 
-    def on_down(self, event, initiator, reactor):
+    def on_down(self, event:Any, initiator:Any, reactor:Any)-> None:
         row_id = initiator.GetSelectedRows()[0]
         if row_id < initiator.GetNumberRows()-1:
             initiator.MoveCursorUp(True)
             initiator.SelectRow(row_id+1)
             reactor.Enable()
 
-    def delete_row(self, event, initiator, reactor):
+    def delete_row(self, event:Any, initiator:Any, reactor:Any) -> None:
         try:
             row_id = initiator.GetSelectedRows()[0]
             print('row_id: ', row_id)
@@ -286,43 +288,40 @@ class Configuration(wx.Frame):
             print(e)
 
         self.deselect_rows_pacs(initiator)
-        # self.delete_pacs_button.Disable()
-        # try:
-        #     reactor.Disable()
-        # except Exception as e:
-        #     print("ERROR WHILE DISABLING DELETE BUTTON IS: ", e)
+
         print(self.configured_pacs)
 
-    def verify_pacs(self, event, initiator):
+    def verify_pacs(self, event:Any, initiator:Any)->None:
         #TODO: Write Program to verify pacs server details
         row_id = initiator.GetSelectedRows()[0]
-        status = True
-        if row_id%2:
+        c_echo = CEcho(initiator.GetCellValue(row_id, 0), int(initiator.GetCellValue(row_id, 1)))
+        status = c_echo.verify()
+        if status:
+            self.showmsg(2, 'PACS Server Verified Successfully')
             num_cols = initiator.GetNumberCols()
             for col in range(num_cols):
                 initiator.SetCellBackgroundColour(row_id, col, wx.GREEN)
         else:
-            status= False
             num_cols = initiator.GetNumberCols()
             for col in range(num_cols):
-                initiator.SetCellBackgroundColour(row_id, col, wx.GREEN)
+                initiator.SetCellBackgroundColour(row_id, col, wx.RED)
         self.deselect_rows_pacs(initiator)
         return status
         
-    def deselect_rows(self, initiator, reactor_list):
+    def deselect_rows(self, initiator:Any, reactor_list:list)->None:
         print('REACHED HERE 328')
         # initiator.ClearSelection()
         # for reactor in reactor_list:
         #         reactor.Disable()
     
-    def deselect_rows_pacs(self, initiator):
+    def deselect_rows_pacs(self, initiator:Any)->None:
         try:
             reactor_list = [self.delete_pacs_button, self.up_button, self.down_button, self.verify_pacs_button]
             self.deselect_rows(initiator, reactor_list)
         except Exception as e:
             print(e)
 
-    def create_pacs_info(self):
+    def create_pacs_info(self)-> wx.BoxSizer:
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
 
@@ -342,7 +341,7 @@ class Configuration(wx.Frame):
 
         return main_sizer
 
-    def create_add_pacs_server(self):
+    def create_add_pacs_server(self) -> wx.StaticBoxSizer:
         box = wx.StaticBox(self.panel, label='Add PACS Server')
         main_sizer = wx.StaticBoxSizer(box, wx.HORIZONTAL)
 
@@ -369,14 +368,16 @@ class Configuration(wx.Frame):
         self.ip_add_button.Bind(wx.EVT_BUTTON, lambda event: self.add_pacs_server(event, self.ip_address_textbox, self.port_textbox, self.ae_title_textbox, self.description_textbox))
 
         self.ip_edit_button = self.create_button(label='Update', enable=False)
+        self.ip_edit_button.Bind(wx.EVT_BUTTON, lambda event: self.add_pacs_server(event, self.ip_address_textbox, self.port_textbox, self.ae_title_textbox, self.description_textbox, edit=True))
 
         button_sizer.Add(self.ip_add_button, 0, wx.EXPAND | wx.ALL, 5)
         button_sizer.Add(self.ip_edit_button, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         return main_sizer
+
     
-    def validators(self, ip_address_value, port_value, ae_title_value, description_value):
+    def validators(self, ip_address_value:str, port_value:int, ae_title_value:str, edit:bool=False)-> bool:
         if not is_valid_port(port_value) :
             raise ValueError('Invalid Port')
 
@@ -384,13 +385,19 @@ class Configuration(wx.Frame):
         if not is_valid_ip_address(ip_address_value):
             raise ValueError('Invalid IP Address')
         
-        if any(ip_address_value == obj.get('IP ADDRESS') for obj in self.configured_pacs) and any(port_value == obj.get('PORT') for obj in self.configured_pacs) :
-            raise ValueError('Same IP Address and Port number already exists')
+        # now same pair of ip_address and port_number should not be added
+        same_ip_address_port_pair =  any(ip_address_value == obj.get('IP ADDRESS') and port_value == obj.get('PORT') for obj in self.configured_pacs)
+        same_aet_title = any(ae_title_value == obj.get('AE TITLE') for obj in self.configured_pacs)
 
-        return True
+        if same_ip_address_port_pair:
+            raise ValueError('Same IP Address and Port number already exists')
+        elif not edit and same_aet_title:
+            raise ValueError('Same AE Title already exists')
+        else:
+            return True
 
     
-    def add_pacs_server(self,evt,ip_address_textbox, port_textbox, ae_title_textbox, description_textbox):
+    def add_pacs_server(self,evt:Any,ip_address_textbox: wx.TextCtrl, port_textbox:wx.TextCtrl, ae_title_textbox:wx.TextCtrl, description_textbox:wx.TextCtrl, edit:bool =False) ->None:
         #TODO: Add Checker to verify if the data are valid or not
         ip_address_value = ip_address_textbox.GetValue()
         port_value = port_textbox.GetValue()
@@ -398,7 +405,7 @@ class Configuration(wx.Frame):
         description_value = description_textbox.GetValue()
         try:
             print('REACHED HERE 412')
-            self.validators(ip_address_value, port_value, ae_title_value, description_value)
+            self.validators(ip_address_value, port_value, ae_title_value, edit=edit)
         except ValueError as ve:
             # show the error and return
             print('VALUE ERROR')
@@ -407,7 +414,8 @@ class Configuration(wx.Frame):
             time.sleep(3)
             errordlg.Destroy()
             return
-        dlg = CustomDialog(self, "Do you want to add this item?")
+        add_or_edit = 'Add' if not edit else 'Edit'
+        dlg = CustomDialog(self, f"Do you want to {add_or_edit} this item?")
         result = dlg.ShowModal()
         valid = True  # need to create_function to verify if the data are valid
         if valid and  result == wx.ID_YES:
@@ -421,11 +429,19 @@ class Configuration(wx.Frame):
                 configured_pacs_columns = ['IP ADDRESS', 'PORT', 'AE TITLE', 'Description', 'Retrievel Protocol', 'Preferred Transfer Syntax']
                 new_data = {'IP ADDRESS': ip_address_value, 'PORT': port_value, 'AE TITLE': ae_title_value, 'Description': description_value, 'Retrievel Protocol': 'DICOM', 'Preferred Transfer Syntax': 'Implicit VR Little Endian'}
                 #new_data = [ip_address_value, port_value, ae_title_value, description_value, 'DICOM', 'Implicit VR Little Endian']
-                self.configured_pacs.append(new_data)
-                self.pacs_table.AppendRows(1)
-                for col_nu in range(self.pacs_table.GetNumberCols()):
-                    col_tag = configured_pacs_columns[col_nu]
-                    self.pacs_table.SetCellValue(self.pacs_table.GetNumberRows()-1, col_nu, new_data.get(col_tag, ''))
+                if edit:
+                    # we wanna get the row_number of the selected row and then change data of that row
+                    row_number = self.pacs_table.GetSelectedRows()[0]
+                    self.configured_pacs[row_number] = new_data
+                    for col_nu in range(self.pacs_table.GetNumberCols()):
+                        col_tag = configured_pacs_columns[col_nu]
+                        self.pacs_table.SetCellValue(row_number, col_nu, new_data.get(col_tag, ''))
+                else:
+                    self.configured_pacs.append(new_data)
+                    self.pacs_table.AppendRows(1)
+                    for col_nu in range(self.pacs_table.GetNumberCols()):
+                        col_tag = configured_pacs_columns[col_nu]
+                        self.pacs_table.SetCellValue(self.pacs_table.GetNumberRows()-1, col_nu, new_data.get(col_tag, ''))
 
                 # with open('pcv1_file.json', 'w') as file:
                 #     print('Writing to json file')
@@ -444,7 +460,7 @@ class Configuration(wx.Frame):
         description_textbox.SetValue('')
         return 
     
-    def create_footer(self):
+    def create_footer(self) -> wx.BoxSizer:
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         #save button
@@ -459,7 +475,7 @@ class Configuration(wx.Frame):
 
         return main_sizer
 
-    def on_save(self, event):
+    def on_save(self, event:Any) ->None:
         dlg = CustomDialog(self, "Do you want to save this item?")
         result = dlg.ShowModal()
         if result == wx.ID_YES:
@@ -471,7 +487,7 @@ class Configuration(wx.Frame):
 
         dlg.Destroy()
     
-    def on_cancel(self, event):
+    def on_cancel(self, event:Any) ->None:
         dlg = CustomDialog(self, "Do you want to cancel this item?")
         result = dlg.ShowModal()
         if result == wx.ID_YES:
@@ -479,13 +495,13 @@ class Configuration(wx.Frame):
             self.Close()
         dlg.Destroy()
 
-    def show_error_message(self, message= 'Some Error Occured'):
+    def show_error_message(self, message:str = 'Some Error Occured')->None:
         app = wx.App()
         msg_dlg = wx.MessageDialog(self, message, "Error", wx.OK | wx.ICON_ERROR)
         msg_dlg.ShowModal()
         # msg_dlg.Destroy()
 
-    def on_text_enter(self, event):
+    def on_text_enter(self, event:Any):
         print('enter')
         if self.ip_address_textbox.GetValue() != '' and self.port_textbox.GetValue() != '' and self.ae_title_textbox.GetValue() != '' :
             self.ip_add_button.Enable(True)
