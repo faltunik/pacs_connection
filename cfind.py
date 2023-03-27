@@ -197,8 +197,6 @@ class CFind:
             if status and res_identifier:
                 res = self.decode_response(res_identifier)
                 if len(res) >0: output.append(res)
-                #print("119", res)
-                #print(f"for identifier = {identifier} we are getting result nu {count} = {res_identifier} and op = {res}")
             else:
                 print('Connection timed out, was aborted or received invalid response')
         return output

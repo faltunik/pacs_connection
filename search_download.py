@@ -261,7 +261,7 @@ class Browse(wx.Frame):
 
         #search type
         search_type_list = ["Patient ID", "Patient Name", "Accession Number"]
-        self.search_type = self.create_select_box(search_type_list, 0)
+        self.search_type = self.create_select_box(search_type_list, 2)
         main_sizer.Add(self.search_type, 0, wx.ALL, 5)
 
         #textbox
