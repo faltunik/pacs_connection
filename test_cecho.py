@@ -4,7 +4,7 @@ from cecho import CEcho
 
 class TestCEcho(unittest.TestCase):
     
-
+    
     def test_verify_association_established(self):
         with patch('cecho.AE') as mock_ae:
             # configure this mock_ae obj

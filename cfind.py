@@ -153,7 +153,6 @@ class CFind:
     
     def execute_search(self, **kwargs) -> list:
         dataset = Dataset()
-        #dataset.QueryRetrieveLevel = kwargs.get('QueryRetrieveLevel', 'PATIENT')
         kwargs['QueryRetrieveLevel'] = 'PATIENT'
         patient_output = self.send_cfind(dataset, **kwargs) # List[Dict]
         final_result = []
