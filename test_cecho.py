@@ -18,20 +18,23 @@ class TestCEcho(unittest.TestCase):
             c_echo.ae = mock_ae
             c_echo.assoc = mock_assoc
 
-            #mock_assoc.send_c_echo.assert_called_once()
+            print("21",mock_assoc.send_c_echo.call_count)
 
             #if success
             self.assertTrue(c_echo.verify())
+            assert mock_assoc.send_c_echo.call_count ==1
             mock_assoc.release.assert_called_once()
 
             # if failed
             mock_assoc.send_c_echo.return_value = None
             self.assertFalse(c_echo.verify())
+            assert mock_assoc.send_c_echo.call_count ==2
             assert mock_assoc.release.call_count == 2
 
             # if connection not established
             mock_assoc.is_established = False
             self.assertFalse(c_echo.verify())
+            assert mock_assoc.send_c_echo.call_count ==2
             assert mock_assoc.release.call_count == 2
 
             
