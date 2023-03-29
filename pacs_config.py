@@ -302,6 +302,7 @@ class Configuration(wx.Frame):
             for col in range(num_cols):
                 initiator.SetCellBackgroundColour(row_id, col, wx.GREEN)
         else:
+            self.showmsg(2, 'PACS Server Verified Successfully')
             num_cols = initiator.GetNumberCols()
             for col in range(num_cols):
                 initiator.SetCellBackgroundColour(row_id, col, wx.RED)
