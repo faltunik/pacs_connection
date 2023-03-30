@@ -20,7 +20,7 @@ def get_pacs_details():
 
 
 
-# Now help me in adding typing hints to the following code
+
 
 class Browse(wx.Frame):
 
@@ -149,7 +149,7 @@ class Browse(wx.Frame):
         # get the value of the data type
         data_type = self.search_type.GetStringSelection()
         data_type = data_type.replace(' ', '')
-        search_value = kwargs.get('obj').GetValue()
+        search_value = kwargs.get('obj').GetValue() if kwargs.get('obj') else self.search_textbox.GetValue()
 
         search_filter = {
             'PatientID': '*',
@@ -179,7 +179,7 @@ class Browse(wx.Frame):
             search_img_table.AppendRows(numRows=1)
             for col_nu in range(search_img_table.GetNumberCols()):
                 cols_name = search_img_table.GetColLabelValue(col_nu)
-                cell_value = str(values.get(cols_name, ''))
+                cell_value = str(values.get(cols_name, 'NA'))
                 
                 search_img_table.SetCellValue( max(0, search_img_table.GetNumberRows()-1), col_nu, cell_value )
                 search_img_table.SetCellOverflow(max(0, search_img_table.GetNumberRows()-1), col_nu,True)
@@ -265,19 +265,19 @@ class Browse(wx.Frame):
         main_sizer.Add(self.search_type, 0, wx.ALL, 5)
 
         #textbox
-        search_text = wx.TextCtrl(self.panel, size=(250, -1) ,style=wx.TE_PROCESS_ENTER)
-        search_text.SetHint("Enter Search Text")
-        search_text.Bind(wx.EVT_TEXT_ENTER, self.search_result)
-        main_sizer.Add(search_text, 0, wx.ALL, 5)
+        self.search_textbox = wx.TextCtrl(self.panel, size=(250, -1) ,style=wx.TE_PROCESS_ENTER)
+        self.search_textbox.SetHint("Enter Search Text")
+        self.search_textbox.Bind(wx.EVT_TEXT_ENTER, self.search_result)
+        main_sizer.Add(self.search_textbox, 0, wx.ALL, 5)
 
         #search button
         search_button = wx.Button(self.panel, label="Search")
-        search_button.Bind(wx.EVT_BUTTON, lambda event :self.search_result(event, obj= search_text))
+        search_button.Bind(wx.EVT_BUTTON, lambda event :self.search_result(event, obj= self.search_textbox))
         main_sizer.Add(search_button, 0, wx.ALL, 5)
 
         #clear button
         clear_button = wx.Button(self.panel, label="Clear")
-        clear_button.Bind(wx.EVT_BUTTON, lambda event : self.on_clear(event, search_text))
+        clear_button.Bind(wx.EVT_BUTTON, lambda event : self.on_clear(event, self.search_textbox))
 
         main_sizer.Add(clear_button, 0, wx.ALL, 5)
 

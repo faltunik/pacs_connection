@@ -86,7 +86,7 @@ class Configuration(wx.Frame):
         if horizontal:
             sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.TOP|wx.BOTTOM, border=5)
         else:
-            sizer.Add(label, 0, wx.LEFT|wx.TOP|wx.BOTTOM, border=1)
+            sizer.Add(label, 0, wx.LEFT|wx.EXPAND|wx.ALL|wx.TOP|wx.BOTTOM, border=1)
 
         textbox = wx.TextCtrl(self.panel, value= text_box_value, style=wx.TE_LEFT | wx.TE_PROCESS_ENTER)
         textbox.Enable(enable)
@@ -211,6 +211,7 @@ class Configuration(wx.Frame):
     
     def create_table(self, array:list, cols_list:list)->gridlib.Grid:
         self.grid_table = gridlib.Grid(self.panel, wx.ID_ANY, size = (500, 100))
+         
         self.grid_table.CreateGrid(len(array), len(cols_list))
         self.grid_table.AutoSizeColLabelSize(0)
         
@@ -334,11 +335,14 @@ class Configuration(wx.Frame):
         box = wx.StaticBox(self.panel, label='')
         box_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         configured_pacs_columns = ['IP ADDRESS', 'PORT', 'AE TITLE', 'Description', 'Retrievel Protocol', 'Preferred Transfer Syntax']
+        #table_sizer = wx.GridBagSizer()
         self.pacs_table = self.create_table(self.configured_pacs, configured_pacs_columns)
         self.pacs_table.Bind(wx.grid.EVT_GRID_CELL_LEFT_CLICK, lambda event: self.on_select(event, self.pacs_table, [self.verify_pacs_button,self.delete_pacs_button, self.up_button, self.down_button]))
+        # table_sizer.Add(self.pacs_label, pos=(0, 0), flag=wx.EXPAND)
+        # main_sizer.Add(table_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        
         box_sizer.Add(self.pacs_table, 1, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(box_sizer, 1, wx.EXPAND | wx.ALL, 5)
-
 
         return main_sizer
 
@@ -348,20 +352,20 @@ class Configuration(wx.Frame):
 
         ip_address, self.ip_address_textbox = self.create_label_textbox(label='IP Address', enable=True, label_size=(10, -1), textbox_size=(30, -1))
         self.ip_address_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
-        main_sizer.Add(ip_address, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(ip_address, 1, wx.EXPAND | wx.ALL, 5)
 
         port, self.port_textbox = self.create_label_textbox(label='Port', enable=True)
         self.port_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
-        main_sizer.Add(port, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(port, 1, wx.EXPAND | wx.ALL, 5)
 
         ae_title, self.ae_title_textbox = self.create_label_textbox(label='AE Title', enable=True)
         self.ae_title_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
-        main_sizer.Add(ae_title, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(ae_title, 1, wx.EXPAND | wx.ALL, 5)
 
         description, self.description_textbox = self.create_label_textbox(label='Description', enable=True)
         # bind description with the on_text_enter fucntion
         self.description_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
-        main_sizer.Add(description, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(description, 1, wx.EXPAND | wx.ALL, 5)
 
         # add button
         button_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -371,8 +375,8 @@ class Configuration(wx.Frame):
         self.ip_edit_button = self.create_button(label='Update', enable=False)
         self.ip_edit_button.Bind(wx.EVT_BUTTON, lambda event: self.add_pacs_server(event, self.ip_address_textbox, self.port_textbox, self.ae_title_textbox, self.description_textbox, edit=True))
 
-        button_sizer.Add(self.ip_add_button, 0, wx.EXPAND | wx.ALL, 5)
-        button_sizer.Add(self.ip_edit_button, 0, wx.EXPAND | wx.ALL, 5)
+        button_sizer.Add(self.ip_add_button, 1, wx.EXPAND | wx.ALL, 5)
+        button_sizer.Add(self.ip_edit_button, 1, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         return main_sizer

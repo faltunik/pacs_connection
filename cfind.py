@@ -59,6 +59,7 @@ class CFind:
     def make_request(self, **kwargs) -> list:
         self.ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
         self.assoc = self.ae.associate(self.host, self.port)
+        self.ae.acse_timeout = 180 # setting timeout to 3 minutes
         final_result = []
         if self.assoc.is_established:
             final_result = self.execute_search(**kwargs)
@@ -188,7 +189,17 @@ class CFind:
         identifier = self.create_identifier(dataset, **kwargs)
         # print('HERE TYPE1',identifier, identifier.items(), type(identifier))
         #print(f"166: identifier: {identifier}")
-        responses = self.assoc.send_c_find(identifier, PatientRootQueryRetrieveInformationModelFind)
+        retries = 0
+        while retries <5:
+            try:
+                responses = self.assoc.send_c_find(identifier, PatientRootQueryRetrieveInformationModelFind)
+                break
+            except  RuntimeError:
+                # create association to SCP
+                retries +=1
+                self.assoc = self.ae.associate(self.host, self.port)
+                # responses = self.assoc.send_c_find(identifier, PatientRootQueryRetrieveInformationModelFind)
+
         # print('RESPONSE 55', responses, type(responses))
         
         output = []
