@@ -1,12 +1,17 @@
+from dataclasses import dataclass, field
 from pynetdicom import AE
 from pynetdicom.sop_class import Verification
+from pynetdicom.association import Association
 
+@dataclass
 class CEcho:
-
-    def __init__(self, ip_address, port) -> None:
-        self.ip_address = ip_address
-        self.port = port
-        self.ae = AE()
+    ip_address: str
+    port: int = 4242
+    ae: AE = field(default_factory=AE)
+    assoc: Association = field(init=False)
+    
+    def __post_init__(self):
+        print("Postinit")
         self.ae.add_requested_context(Verification)
         self.assoc = self.ae.associate(self.ip_address, self.port)
 

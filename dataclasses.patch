@@ -1,0 +1,68 @@
+diff --git a/cecho.py b/cecho.py
+index c1b2544..f693202 100644
+--- a/cecho.py
++++ b/cecho.py
+@@ -1,12 +1,17 @@
++from dataclasses import dataclass, field
+ from pynetdicom import AE
+ from pynetdicom.sop_class import Verification
++from pynetdicom.association import Association
+ 
++@dataclass
+ class CEcho:
+-
+-    def __init__(self, ip_address, port) -> None:
+-        self.ip_address = ip_address
+-        self.port = port
+-        self.ae = AE()
++    ip_address: str
++    port: int = 4242
++    ae: AE = field(default_factory=AE)
++    assoc: Association = field(init=False)
++    
++    def __post_init__(self):
++        print("Postinit")
+         self.ae.add_requested_context(Verification)
+         self.assoc = self.ae.associate(self.ip_address, self.port)
+ 
+diff --git a/cfind.py b/cfind.py
+index b1aac6f..52dc9f5 100644
+--- a/cfind.py
++++ b/cfind.py
+@@ -1,3 +1,5 @@
++from dataclasses import dataclass, field
++from typing import Any
+ from pydicom.dataset import Dataset
+ import time
+ import json
+@@ -37,21 +39,21 @@ def serializer(obj):
+                 dict_item[key] = time_formater(value)
+     return obj
+ 
++@dataclass
+ class CFind:
+     """
+     TODO: Search via patient name/id or accession nu and get all details like patient id, patient name, study date, dob etc
+     """
++    host: str
++    port: int = 4242
++    ae: AE = field(default_factory=AE)
++    mapper: dict[str, Any] = field(init=False)
+ 
+-    def __init__(self, host:str, port:int, **kwargs) ->None:
+-        self.host = host
+-        self.port = port
+-        self.ae = AE()
+-        self.user_input = self.get_user_input(**kwargs)
+-        self.ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
++    def __post_init__(self):
+         self.mapper = {
+-            'PATIENT': self.create_patient_identifier,
+-            'STUDY': self.create_study_identifier,
+-            'SERIES': self.create_series_identifier,
++            "PATIENT": self.create_patient_identifier,
++            "STUDY": self.create_study_identifier,
++            "SERIES": self.create_series_identifier,
+         }
+ 
+     def make_request(self, **kwargs) -> list:

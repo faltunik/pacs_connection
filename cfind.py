@@ -1,3 +1,5 @@
+from dataclasses import dataclass, field
+from typing import Any
 from pydicom.dataset import Dataset
 import time
 import json
@@ -37,21 +39,21 @@ def serializer(obj):
                 dict_item[key] = time_formater(value)
     return obj
 
+@dataclass
 class CFind:
     """
     TODO: Search via patient name/id or accession nu and get all details like patient id, patient name, study date, dob etc
     """
+    host: str
+    port: int = 4242
+    ae: AE = field(default_factory=AE)
+    mapper: dict[str, Any] = field(init=False)
 
-    def __init__(self, host:str, port:int, **kwargs) ->None:
-        self.host = host
-        self.port = port
-        self.ae = AE()
-        self.user_input = self.get_user_input(**kwargs)
-        self.ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
+    def __post_init__(self):
         self.mapper = {
-            'PATIENT': self.create_patient_identifier,
-            'STUDY': self.create_study_identifier,
-            'SERIES': self.create_series_identifier,
+            "PATIENT": self.create_patient_identifier,
+            "STUDY": self.create_study_identifier,
+            "SERIES": self.create_series_identifier,
         }
 
     def make_request(self, **kwargs) -> list:
