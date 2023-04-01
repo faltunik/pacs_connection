@@ -158,10 +158,30 @@ class Browse(wx.Frame):
         }
         search_filter[data_type] = search_value
 
-        host, port = self.configured_pacs_mapper.get(pacs_location).get('IP ADDRESS'), int(self.configured_pacs_mapper.get(pacs_location).get('PORT'))
+        #host, port = self.configured_pacs_mapper.get(pacs_location).get('IP ADDRESS'), int(self.configured_pacs_mapper.get(pacs_location).get('PORT'))
+        
+        import threading
+        def make_c_find_request(pacs_obj, op):
+            thost = pacs_obj.get('IP ADDRESS')
+            tport = pacs_obj.get('PORT', 104)
+            cfind_obj = CFind(host=thost, port=tport)
+            tmp_result = cfind_obj.make_request(aet='', aet_title='', StudyDate=date_range, pacs_location=pacs_location, PatientID=search_filter.get('PatientID', '*'), PatientName=search_filter.get('PatientName', '*'), AccessionNumber=search_filter.get('AccessionNumber', '*'))
+            op.extend(tmp_result)
 
-        cfind_obj = CFind(host=host, port = port)
-        result = cfind_obj.make_request(aet='', aet_title='',StudyDate= date_range, pacs_location=pacs_location, PatientID= search_filter.get('PatientID', '*'), PatientName= search_filter.get('PatientName', '*'), AccessionNumber=search_filter.get('AccessionNumber', '*'))
+        result = []
+        threads = []
+        PUBLIC_PACS_SERVER = [{'IP ADDRESS': 'DicomServer.co.uk', 'PORT': 104}, {'IP ADDRESS': 'DicomServer.co.uk', 'PORT': 104}] #configured_pacs
+        import time
+        start_time = time.time()
+        for pacs_obj in PUBLIC_PACS_SERVER:
+            thread = threading.Thread(target=make_c_find_request, args=(pacs_obj, result))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+        end_time = time.time()
+        print(f"Time taken is: {end_time - start_time}")
         # now we wanna  clear the table
         search_img_table = self.result_table
         # tags = ["PatientName", "PatientID", "StudyInstanceUID", "SeriesInstanceUID"]
