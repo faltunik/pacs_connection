@@ -77,6 +77,7 @@ class Configuration(wx.Frame):
         self.create_footer_sizer = self.create_footer()
         self.main_layout.Add(self.create_footer_sizer, 0,
                              wx.RIGHT | wx.EXPAND | wx.ALL, 1)
+        
 
         return
 
@@ -546,6 +547,7 @@ class Configuration(wx.Frame):
 
     def create_footer(self) -> wx.BoxSizer:
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btnsizer = wx.StdDialogButtonSizer()
 
         # save button
         save_button = self.create_button(label='Save', enable=True)
@@ -555,12 +557,26 @@ class Configuration(wx.Frame):
         except:
             pass
         save_button.Bind(wx.EVT_BUTTON, self.on_save)
-        main_sizer.Add(save_button, 0, wx.Right | wx.EXPAND | wx.ALL, 3)
+        
 
         # cancel button
         cancel_button = self.create_button(label='Cancel', enable=True)
         cancel_button.Bind(wx.EVT_BUTTON, self.on_cancel)
-        main_sizer.Add(cancel_button, 0, wx.Right | wx.EXPAND | wx.ALL, 3)
+        
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_sizer.AddStretchSpacer()  # add a stretch spacer to push the buttons to the right
+        button_sizer.Add(cancel_button, 0, wx.RIGHT, 5)  # add the cancel button with a 5-pixel right margin
+        button_sizer.Add(save_button, 0, wx.RIGHT)
+        main_sizer.Add(button_sizer, 0,  wx.RIGHT | wx.EXPAND | wx.ALL, 3)
+        # main_sizer.Add(save_button, 0, wx.Right | wx.EXPAND | wx.ALL, 3)
+        # main_sizer.Add(cancel_button, 0, wx.Right | wx.EXPAND | wx.ALL, 3)
+
+        # btnsizer.AddButton(save_button)
+        # btnsizer.AddButton(cancel_button)
+        # # btnsizer.Realize()
+        # main_sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALL, 3)
+
 
         return main_sizer
 
