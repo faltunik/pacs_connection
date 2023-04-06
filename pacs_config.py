@@ -40,7 +40,7 @@ class CustomDialog(wx.Dialog):
 
 
 class Configuration(wx.Frame):
-    def __init__(self, size: tuple = (600, 400)) -> None:
+    def __init__(self, size: tuple = (600, 450)) -> None:
         wx.Frame.__init__(self, None, -1, "PACS Configuration",
                           size=size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         # icon = wx.Icon('icons/nitrr.png', wx.BITMAP_TYPE_PNG)
@@ -135,8 +135,6 @@ class Configuration(wx.Frame):
                         default_menu_item_id)
                     # default_menu_item.Check(True)
             else:
-                menu_item_id = wx.ID_ANY
-                #menu_item = menu.Append(menu_item_id, option)
                 menu_item = menu.InsertRadioItem(des_pos,wx.ID_ANY, option)
                 self.Bind(wx.EVT_MENU, self.on_menu_select, menu_item)
                 print(option)
@@ -171,9 +169,6 @@ class Configuration(wx.Frame):
         return d
 
     def on_advance_setting_click(self, event: wx.CommandEvent) -> None:
-        # get the button position and size
-        id_selected = event.GetId()
-        event_obj = event.GetEventObject()
         pos = self.advanced_settings_button.GetPosition()
         size = self.advanced_settings_button.GetSize()
         self.panel.PopupMenu(self.create_menu(
@@ -198,7 +193,6 @@ class Configuration(wx.Frame):
         self.advanced_settings_button.Bind(
             wx.EVT_BUTTON, self.on_advance_setting_click)
         main_sizer.Add(self.advanced_settings_button, 0, wx.EXPAND | wx.ALL, 5)
-        # TODO: Find which button is clicked and also mark earlier ticked option
         return main_sizer
 
     def create_header_label(self) -> wx.BoxSizer:
@@ -219,27 +213,31 @@ class Configuration(wx.Frame):
             label='Verify', enable=False)
         header_sizer.Add(self.verify_pacs_button, 0, wx.ALIGN_CENTER_VERTICAL |
                          wx.LEFT | wx.TOP | wx.BOTTOM, border=5)
-        self.verify_pacs_button.Bind(
-            wx.EVT_BUTTON, lambda event: self.verify_pacs(event, self.grid_table))
+        # self.verify_pacs_button.Bind(
+        #     wx.EVT_BUTTON, lambda event: self.verify_pacs(event, self.grid_table))
+        self.verify_pacs_button.Bind(wx.EVT_BUTTON, self.verify_pacs)
 
         self.delete_pacs_button = self.create_button(
             label='Delete', enable=False)
         header_sizer.Add(self.delete_pacs_button, 0, wx.ALIGN_CENTER_VERTICAL |
                          wx.RIGHT | wx.TOP | wx.BOTTOM, border=5)
-        self.delete_pacs_button.Bind(wx.EVT_BUTTON, lambda event: self.delete_row(
-            event, self.grid_table, self.delete_pacs_button))
+        # self.delete_pacs_button.Bind(wx.EVT_BUTTON, lambda event: self.delete_row(
+        #     event, self.grid_table, self.delete_pacs_button))
+        self.delete_pacs_button.Bind(wx.EVT_BUTTON, self.delete_row)
 
         self.up_button = self.create_button(label='Up', enable=False)
         header_sizer.Add(self.up_button, 0, wx.ALIGN_CENTER_VERTICAL |
                          wx.RIGHT | wx.TOP | wx.BOTTOM, border=5)
-        self.up_button.Bind(wx.EVT_BUTTON, lambda event: self.on_up(
-            event, self.grid_table, self.up_button))
+        # self.up_button.Bind(wx.EVT_BUTTON, lambda event: self.on_up(
+        #     event, self.grid_table, self.up_button))
+        self.up_button.Bind(wx.EVT_BUTTON, self.on_up)
 
         self.down_button = self.create_button(label='Down', enable=False)
         header_sizer.Add(self.down_button, 0, wx.ALIGN_CENTER_VERTICAL |
                          wx.RIGHT | wx.TOP | wx.BOTTOM, border=5)
-        self.down_button.Bind(wx.EVT_BUTTON, lambda event: self.on_down(
-            event, self.grid_table, self.down_button))
+        # self.down_button.Bind(wx.EVT_BUTTON, lambda event: self.on_down(
+        #     event, self.grid_table, self.down_button))
+        self.down_button.Bind(wx.EVT_BUTTON, self.on_down)
 
         # now add head_sizer to main_head_sizer in right side
         main_header_sizer.Add(header_sizer, 1, wx.LEFT, 5)
@@ -247,24 +245,40 @@ class Configuration(wx.Frame):
         return main_header_sizer
 
     def create_table(self, array: list, cols_list: list) -> gridlib.Grid:
-        self.grid_table = gridlib.Grid(self.panel, wx.ID_ANY, size=(500, 100))
+        tmp_table = gridlib.Grid(self.panel, wx.ID_ANY)
+        # customize height and width of grid
+        tmp_table.SetMinSize((500, 150))
 
-        self.grid_table.CreateGrid(len(array), len(cols_list))
-        self.grid_table.AutoSizeColLabelSize(0)
+
+        tmp_table.CreateGrid(len(array), len(cols_list))
+        # tmp_table.AutoSizeColLabelSize(1)
+        # tmp_table.SetDefaultColSize(150)
 
         for i, col in enumerate(cols_list):
-            self.grid_table.SetColLabelValue(i, col)
-            self.grid_table.AutoSizeColLabelSize(i)
-            self.grid_table.AutoSize()
+            tmp_table.SetColLabelValue(i, col)
+            tmp_table.SetDefaultColSize(150)
+            # tmp_table.AutoSizeColLabelSize()
+            # tmp_table.AutoSize()
 
         for i, row in enumerate(array):
             for j, col_tag in enumerate(cols_list):
                 val = row.get(col_tag, '')
-                self.grid_table.SetCellValue(i, j, val)
-                self.grid_table.SetCellOverflow(i, j, True)
-        self.grid_table.HideRowLabels()
+                # put on center
+                tmp_table.SetCellAlignment(i, j, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
+                tmp_table.SetCellValue(i, j, val)
+                tmp_table.SetCellOverflow(i, j, True)
+        tmp_table.HideRowLabels()
+        tmp_table.SetScrollbars(10, 10, 100, 100)
+        # self.scrolled = wx.ScrolledWindow(self)
+        # self.scrolled.SetScrollbars(1, 1, 1, 1)
+        # sizer = wx.BoxSizer(wx.VERTICAL)
+        # sizer.Add(tmp_table, 1, wx.EXPAND)
+        # self.scrolled.SetSizer(sizer)
 
-        return self.grid_table
+
+        return tmp_table
+    
+
 
     def on_select(self, event: Any, initiator: Any, reactor_list: list) -> None:
         # Enable the button if a row is selected
@@ -284,26 +298,31 @@ class Configuration(wx.Frame):
         self.ip_add_button.Enable()
         self.ip_edit_button.Enable()
 
-    def on_up(self, event: Any, initiator: Any, reactor: Any) -> None:
+    def on_up(self, event: Any) -> None:
+        initiator = self.grid_table
         row_id = initiator.GetSelectedRows()[0]
+        reactor = event.GetEventObject()
         if row_id > 0:
             # initiator.MoveRow(row_id, row_id-1)
             initiator.MoveCursorDown(True)
             initiator.SelectRow(row_id-1)
             reactor.Enable()
 
-        # else:
-        #     reactor.Disable()
+        else:
+            reactor.Disable()
 
-    def on_down(self, event: Any, initiator: Any, reactor: Any) -> None:
+    def on_down(self, event: Any) -> None:
+        reactor = event.GetEventObject()
+        initiator = self.grid_table
         row_id = initiator.GetSelectedRows()[0]
         if row_id < initiator.GetNumberRows()-1:
             initiator.MoveCursorUp(True)
             initiator.SelectRow(row_id+1)
             reactor.Enable()
 
-    def delete_row(self, event: Any, initiator: Any, reactor: Any) -> None:
+    def delete_row(self, event: Any) -> None:
         try:
+            initiator = self.grid_table
             row_id = initiator.GetSelectedRows()[0]
             print('row_id: ', row_id)
             dialog = CustomDialog(
@@ -325,35 +344,39 @@ class Configuration(wx.Frame):
             #self.show_error_message('Please Select a row to delete')
             self.showmsg(3, 'Please Select a row to delete')
             print(e)
-
-        self.deselect_rows_pacs(initiator)
-
         print(self.configured_pacs)
 
-    def verify_pacs(self, event: Any, initiator: Any) -> None:
+    def verify_pacs(self, event: Any) -> None:
         # TODO: Write Program to verify pacs server details
+        print('Calling THe Verify PACS')
+        initiator = self.grid_table
         row_id = initiator.GetSelectedRows()[0]
+        print('c_echo tak pahunch gte')
         c_echo = CEcho(initiator.GetCellValue(row_id, 0),
                        int(initiator.GetCellValue(row_id, 1)))
         status = c_echo.verify()
         if status:
             self.showmsg(2, 'PACS Server Verified Successfully')
             num_cols = initiator.GetNumberCols()
+            print('num_cols: ', num_cols)
             for col in range(num_cols):
                 initiator.SetCellBackgroundColour(row_id, col, wx.GREEN)
+            print('Color Change kr rhe hai 342')
         else:
-            self.showmsg(2, 'PACS Server Verified Successfully')
+            self.showmsg(2, 'PACS Failed')
             num_cols = initiator.GetNumberCols()
+            print('num_cols 345: ', num_cols)
             for col in range(num_cols):
                 initiator.SetCellBackgroundColour(row_id, col, wx.RED)
+            print('Color change kr rhe hai')
         self.deselect_rows_pacs(initiator)
         return status
 
     def deselect_rows(self, initiator: Any, reactor_list: list) -> None:
         print('REACHED HERE 328')
-        # initiator.ClearSelection()
-        # for reactor in reactor_list:
-        #         reactor.Disable()
+        initiator.ClearSelection()
+        for reactor in reactor_list:
+                reactor.Disable()
 
     def deselect_rows_pacs(self, initiator: Any) -> None:
         try:
@@ -372,7 +395,7 @@ class Configuration(wx.Frame):
 
         # grid
         box = wx.StaticBox(self.panel, label='')
-        box_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        #box_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         configured_pacs_columns = ['IP ADDRESS', 'PORT', 'AE TITLE',
                                    'Description', 'Retrievel Protocol', 'Preferred Transfer Syntax']
         #table_sizer = wx.GridBagSizer()
@@ -383,8 +406,9 @@ class Configuration(wx.Frame):
         # table_sizer.Add(self.pacs_label, pos=(0, 0), flag=wx.EXPAND)
         # main_sizer.Add(table_sizer, 1, wx.EXPAND | wx.ALL, 5)
 
-        box_sizer.Add(self.pacs_table, 1, wx.EXPAND | wx.ALL, 5)
-        main_sizer.Add(box_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        # box_sizer.Add(self.pacs_table, 1, wx.EXPAND | wx.ALL, 5)
+        # main_sizer.Add(box_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(self.pacs_table, 1, wx.EXPAND | wx.ALL, 5)
 
         return main_sizer
 
@@ -394,23 +418,23 @@ class Configuration(wx.Frame):
 
         ip_address, self.ip_address_textbox = self.create_label_textbox(
             label='IP Address', enable=True, label_size=(10, -1), textbox_size=(30, -1))
-        self.ip_address_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+        self.ip_address_textbox.Bind(wx.EVT_TEXT, self.on_text_enter)
         main_sizer.Add(ip_address, 1, wx.EXPAND | wx.ALL, 5)
 
         port, self.port_textbox = self.create_label_textbox(
             label='Port', enable=True)
-        self.port_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+        self.port_textbox.Bind(wx.EVT_TEXT, self.on_text_enter)
         main_sizer.Add(port, 1, wx.EXPAND | wx.ALL, 5)
 
         ae_title, self.ae_title_textbox = self.create_label_textbox(
             label='AE Title', enable=True)
-        self.ae_title_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+        self.ae_title_textbox.Bind(wx.EVT_TEXT, self.on_text_enter)
         main_sizer.Add(ae_title, 1, wx.EXPAND | wx.ALL, 5)
 
         description, self.description_textbox = self.create_label_textbox(
             label='Description', enable=True)
         # bind description with the on_text_enter fucntion
-        self.description_textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+        self.description_textbox.Bind(wx.EVT_TEXT, self.on_text_enter) # wx.EVT_TEXT_ENTER
         main_sizer.Add(description, 1, wx.EXPAND | wx.ALL, 5)
 
         # add button
@@ -500,6 +524,8 @@ class Configuration(wx.Frame):
                         col_tag = configured_pacs_columns[col_nu]
                         self.pacs_table.SetCellValue(
                             self.pacs_table.GetNumberRows()-1, col_nu, new_data.get(col_tag, ''))
+                        self.grid_table.SetCellAlignment(self.pacs_table.GetNumberRows()-1, col_nu, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
+                
 
                 # with open('pcv1_file.json', 'w') as file:
                 #     print('Writing to json file')
@@ -566,18 +592,16 @@ class Configuration(wx.Frame):
         # msg_dlg.Destroy()
 
     def on_text_enter(self, event: Any):
-        print('enter')
-        if self.ip_address_textbox.GetValue() != '' and self.port_textbox.GetValue() != '' and self.ae_title_textbox.GetValue() != '':
+        if self.ip_address_textbox.GetValue()  and self.port_textbox.GetValue()  and self.ae_title_textbox.GetValue():
             self.ip_add_button.Enable(True)
             self.ip_edit_button.Enable(True)
+        else:
+            self.ip_add_button.Disable()
+            self.ip_edit_button.Disable()
 
 
 if __name__ == "__main__":
     app = wx.App()
     frame = Configuration()
-    # locale = wx.Locale(wx.LANGUAGE_DEFAULT)
-    # icon = wx.Icon('icons/nitrr.png', wx.BITMAP_TYPE_PNG)
-    # Set the icon for the frame
-    # frame.SetIcon(icon)
     frame.Show()
     app.MainLoop()
