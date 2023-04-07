@@ -7,6 +7,7 @@ from pacs_config import  Configuration
 from helpers import json_serial
 from constants import COLS
 from download_history import DownloadHistory
+import datetime
 
 
 def get_pacs_details():
@@ -49,22 +50,16 @@ class Browse(wx.Frame):
         self.main_layout.Add(self.create_image_details(size = (-1,130)), 1, wx.EXPAND | wx.ALL, 1)
         self.main_layout.Add(self.create_footer(),1, wx.RIGHT, 1)
 
-
     def create_select_box(self, locations:list, cur_selection:int=0, **kwargs) -> wx.ComboBox:
         combo = wx.ComboBox(self.panel, choices=locations, style =wx.CB_DROPDOWN | wx.CB_SORT)
         combo.SetSelection(cur_selection)
-        combo.Bind(wx.EVT_COMBOBOX_CLOSEUP, lambda event: self.on_selection_X(event, combo, **kwargs))
+        combo.Bind(wx.EVT_COMBOBOX_CLOSEUP, lambda event: self.on_selection_X(event, **kwargs))
         return combo
 
-
-    def on_selection_X(self, event:wx.Event, obj: Any, **kwargs) ->None:
+    def on_selection_X(self, event:wx.Event, **kwargs) ->None:
+        obj = event.GetEventObject()
         selected_text = obj.GetStringSelection()
-
-        print("56:", type(event))
-        print("57:", type(obj))
-        print(selected_text)
         idx = obj.FindString(selected_text)
-        print(idx)
         if kwargs.get('reactors'):
             reactors = kwargs.get('reactors')
             on_option = kwargs.get('on_option')
@@ -75,20 +70,13 @@ class Browse(wx.Frame):
                 for reactor in reactors:
                     reactor.Disable()
 
-
-
     def popup(self, event:wx.Event)->None:
         pop = Configuration()
         pop.Show()
         pop.Bind(wx.EVT_CLOSE, self.on_close)
-        #check if This window is closed
-        # pop.Bind(wx.EVT_CLOSE, self.on_close)
-    
-    
 
-
+    
     def on_close(self, event:wx.Event)->None:
-        # clear the self.pacs_locations
         obj = json_serial('pcv1_file.json')
         self.configured_pacs_mapper, self.all_pacs, self.configured_pacs = get_pacs_details()
         self.pacs_location.Clear()
@@ -101,8 +89,6 @@ class Browse(wx.Frame):
 
         event.Skip()
 
-        
-
     def on_date_changed(self, event:wx.Event)->None:
 
         try:
@@ -112,6 +98,48 @@ class Browse(wx.Frame):
             print(f"cur_date is: {event.GetEventObject().GetValue()}")
         except Exception as e:
             print(f"ERROR IS: {e}")
+
+
+    def date_range_helper(self, option:str)->str:
+        if option == 'ALL': return "19000101-99991231"
+        elif option == 'TODAY':
+            # find today's date
+            today = datetime.date.today()
+            # format this in string of "YYYYMMDD"
+            today = today.strftime("%Y%m%d")
+            return f"{today}-{today}"
+        elif option == 'YESTERDAY':
+            # find yesterday's date
+            yesterday = datetime.date.today() - datetime.timedelta(days=1)
+            # format this in string of "YYYYMMDD"
+            yesterday = yesterday.strftime("%Y%m%d")
+            return f"{yesterday}-{yesterday}"
+        
+        elif option == 'LAST 7 DAYS':
+            # find today's date
+            today = datetime.date.today()
+            # find 7 days before today's date
+            last_7_days = today - datetime.timedelta(days=7)
+            # format this in string of "YYYYMMDD"
+            today = today.strftime("%Y%m%d")
+            last_7_days = last_7_days.strftime("%Y%m%d")
+            return f"{last_7_days}-{today}"
+        
+        elif option == 'LAST 30 DAYS':
+            today = datetime.date.today()
+            last_30_days = today - datetime.timedelta(days=30)
+            today = today.strftime("%Y%m%d")
+            last_30_days = last_30_days.strftime("%Y%m%d")
+            return f"{last_30_days}-{today}"
+        else:
+            start_date_range = self.start_date_range.GetValue()
+            start_date_range = start_date_range.FormatISODate().replace('-', '')
+            end_date_range = self.end_date_range.GetValue().FormatISODate().replace('-', '')
+            return f"{start_date_range}-{end_date_range}"
+        
+
+
+
 
     def search_result(self, event:wx.Event, **kwargs)->None:
         """
@@ -138,7 +166,8 @@ class Browse(wx.Frame):
 
         # get date_range
         print("self data range 241: {self.all_dates.GetValue()}", self.all_dates.GetValue())
-        date_range = "19000101-99991231" if self.all_dates.GetValue() == 'ALL' else f"{start_date_range}-{end_date_range}"
+
+        date_range = self.date_range_helper(self.all_dates.GetValue())
         print("242: date_range", date_range)
 
         # get the value of the pacs location
@@ -207,8 +236,7 @@ class Browse(wx.Frame):
         # get row len of the table
         row_len = search_img_table.GetNumberRows()
         print("row_len", row_len)
-        self.searching_text.SetLabel(f"Total Result Found: {len(tables_data)}")
-                                
+        self.searching_text.SetLabel(f"Total Result Found: {len(tables_data)}")                                
         
     def on_clear(self, event:wx.Event, obj:Any):
         obj.SetValue("")
@@ -221,9 +249,7 @@ class Browse(wx.Frame):
         obj.SelectRow(row_id)
         d = {}
         for col in range(obj.GetNumberCols()):
-            # get label of column
             label = obj.GetColLabelValue(col)
-            # get value of cell
             value = obj.GetCellValue(row_id, col)
             d[label] = value
             print(label, value)
@@ -237,7 +263,6 @@ class Browse(wx.Frame):
             print(d.get(col_label, "TEST DATA"))
             image_details_panel.SetCellValue(image_details_panel.GetNumberRows()-1, col_nu, d.get(col_label, "TEST DATA"))
         self.download_image_btn.Enable()
-
 
     def create_header_1(self):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -253,9 +278,9 @@ class Browse(wx.Frame):
         main_sizer.Add(self.pacs_location, 0, wx.ALL, 5)
 
         # modalitites
-        # self.modalities_list = ["All Modalities", "CT", "MR", "US", "CR", "DX", "MG", "NM", "OT", "PT", "RF", "SC", "XA", "XC"]
-        # self.modalities = self.create_select_box(self.modalities_list, 0)
-        # main_sizer.Add(self.modalities, 0, wx.ALL, 5)
+        self.modalities_list = ["All Modalities", "CT", "MR", "US", "CR", "DX", "MG", "NM", "OT", "PT", "RF", "SC", "XA", "XC"]
+        self.modalities = self.create_select_box(self.modalities_list, 0)
+        main_sizer.Add(self.modalities, 0, wx.ALL, 5)
 
 
 
@@ -269,7 +294,7 @@ class Browse(wx.Frame):
 
 
         # all dates
-        self.all_dates_list = ['ALL','Custom']
+        self.all_dates_list = ['ALL','Custom', 'Today', 'Yesterday', 'Last 7 Days']
         self.all_dates = self.create_select_box(self.all_dates_list, 0, reactors=[self.start_date_range, self.end_date_range], on_option='Custom')
         
         main_sizer.Add(self.all_dates, 0, wx.ALL, 5)
@@ -277,7 +302,6 @@ class Browse(wx.Frame):
         main_sizer.Add(self.end_date_range, 0, wx.ALL, 5)
 
         return main_sizer
-
 
     def create_header_2(self):
 
@@ -322,8 +346,7 @@ class Browse(wx.Frame):
 
         self.grid_table.SetScrollbars(100, 100, 10, 10)
         return self.grid_table
-    
-    
+        
     def create_show_search_result(self, arr:list)-> wx.StaticBoxSizer:
         box = wx.StaticBox(self.panel, label='')
         main_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
@@ -354,12 +377,14 @@ class Browse(wx.Frame):
         self.download_history = wx.Button(self.panel, label = 'Download History')
         self.download_history.Bind(wx.EVT_BUTTON, self.show_download_history)
     
-        self.searching_text = wx.StaticText(self.panel, label="")
-        button_sizer.Add(self.searching_text, 0, wx.ALL, 5)
+        
+        #button_sizer.Add(self.searching_text, 0, wx.ALL, 5)
         #self.searching_text.Hide()
  
         main_sizer.Add(button_sizer, 1, wx.RIGHT, 1)
         main_sizer.Add(self.download_history, 0, wx.ALL, 5)
+        self.searching_text = wx.StaticText(self.panel, label="")
+        main_sizer.Add(self.searching_text, 0, wx.ALL, 5)
         return main_sizer
     
     def show_download_history(self, event:wx.Event)->None:
