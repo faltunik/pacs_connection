@@ -79,6 +79,18 @@ class BasicCompo:
         time.sleep(t)
         return d
     
+    @staticmethod
+    def create_slider(panel, label, value=100, min_value=0, max_value=100):
+        slider_comp = wx.Slider(panel, value=value, minValue=min_value, maxValue=max_value, style=wx.SL_HORIZONTAL | wx.SL_LABELS)
+        slider_comp.SetTickFreq(100)
+        slider_comp.SetPageSize(100)
+        slider_comp.SetLineSize(100)
+        slider_comp.SetTick(100)
+        slider_comp.SetLabel(label)
+        slider_comp.SetThumbLength(25)
+        slider_comp.SetValue(50)
+        return slider_comp
+    
 
 
 
