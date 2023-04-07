@@ -188,12 +188,15 @@ class Browse(wx.Frame):
         #host, port = self.configured_pacs_mapper.get(pacs_location).get('IP ADDRESS'), int(self.configured_pacs_mapper.get(pacs_location).get('PORT'))
         
         import threading
-        def make_c_find_request(pacs_obj, op):
+        import concurrent.futures  
+        from concurrent.futures import ThreadPoolExecutor
+        def make_c_find_request(pacs_obj):
             thost = pacs_obj.get('IP ADDRESS')
             tport = pacs_obj.get('PORT', 104)
             cfind_obj = CFind(host=thost, port=tport)
             tmp_result = cfind_obj.make_request(aet='', aet_title='', StudyDate=date_range, pacs_location=pacs_location, PatientID=search_filter.get('PatientID', '*'), PatientName=search_filter.get('PatientName', '*'), AccessionNumber=search_filter.get('AccessionNumber', '*'))
-            op.extend(tmp_result)
+            
+            return tmp_result
 
         result = []
         threads = []
@@ -201,13 +204,25 @@ class Browse(wx.Frame):
         PUBLIC_PACS_SERVER = [{'IP ADDRESS': 'DicomServer.co.uk', 'PORT': 104}, {'IP ADDRESS': 'DicomServer.co.uk', 'PORT': 104}] #configured_pacs
         import time
         start_time = time.time()
-        for pacs_obj in PUBLIC_PACS_SERVER:
-            thread = threading.Thread(target=make_c_find_request, args=(pacs_obj, result))
-            threads.append(thread)
-            thread.start()
+        # for pacs_obj in PUBLIC_PACS_SERVER:
+        #     thread = threading.Thread(target=make_c_find_request, args=(pacs_obj, result))
+        #     threads.append(thread)
+        #     thread.start()
 
-        for thread in threads:
-            thread.join()
+        # for thread in threads:
+        #     thread.join()
+
+        with ThreadPoolExecutor(max_workers=len(PUBLIC_PACS_SERVER)) as executor:
+            future_to_obj = {executor.submit(make_c_find_request, pacs_obj): pacs_obj for pacs_obj in PUBLIC_PACS_SERVER}
+            for future in concurrent.futures.as_completed(future_to_obj):
+                obj = future_to_obj[future]
+                try:
+                    tmp_result = future.result()
+                except Exception as exc:
+                    print('%r generated an exception: %s' % (obj, exc))
+                else:
+                    result.extend(tmp_result)
+
         end_time = time.time()
         print(f"Time taken is: {end_time - start_time}")
         # now we wanna  clear the table
