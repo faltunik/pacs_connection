@@ -1,6 +1,0 @@
-1. For Now, we are only letting users to search browse from all locations, but we will let them select set of locations.
-2. Let User filter the search results using Modality
-3. Whenvever I delete the item, I want Delete/Verify/Up/Down button to become inactive
-4. I have to manully enter the Enter button in order to make Add Button Active
-
-
