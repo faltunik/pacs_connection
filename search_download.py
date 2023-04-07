@@ -6,6 +6,7 @@ from cfind import CFind
 from pacs_config import  Configuration
 from helpers import json_serial
 from constants import COLS
+from download_history import DownloadHistory
 
 
 def get_pacs_details():
@@ -19,13 +20,11 @@ def get_pacs_details():
     return configured_pacs_mapper, all_pacs, configured_pacs
 
 
-
-
-
 class Browse(wx.Frame):
 
     CONFIGURED_PACS_MAPPER, ALL_PACS, CONFIGURED_PACS = get_pacs_details()
     def __init__(self, title:str ="Browse and Download", size:tuple=(800, 550)) -> None:
+        #TODO: Use post_init func for calling func when obj get initialized
         wx.Frame.__init__(self, None, -1, title, size =size, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER) 
         self.panel = wx.Panel(self, wx.ID_ANY, size=size)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
@@ -84,10 +83,8 @@ class Browse(wx.Frame):
         pop.Bind(wx.EVT_CLOSE, self.on_close)
         #check if This window is closed
         # pop.Bind(wx.EVT_CLOSE, self.on_close)
-
-
-
-
+    
+    
 
 
     def on_close(self, event:wx.Event)->None:
@@ -122,8 +119,9 @@ class Browse(wx.Frame):
         It Make CFIND Request to the PACS and get the result
         """
 
-        self.searching_text.Show()
-        print("searching....", self.searching_text.IsShown())
+        #self.searching_text.Show()
+        
+        #print("searching....", self.searching_text.IsShown())
 
         # modalities = self.modalities.GetTextSelection()
 
@@ -170,6 +168,7 @@ class Browse(wx.Frame):
 
         result = []
         threads = []
+        self.searching_text.SetLabel("Searching.....")
         PUBLIC_PACS_SERVER = [{'IP ADDRESS': 'DicomServer.co.uk', 'PORT': 104}, {'IP ADDRESS': 'DicomServer.co.uk', 'PORT': 104}] #configured_pacs
         import time
         start_time = time.time()
@@ -194,6 +193,7 @@ class Browse(wx.Frame):
         except Exception as e:
             print(f"ERROR IS: {e}")
             tables_data = []
+
         for i in range(len(tables_data)):
             values = tables_data[i]
             search_img_table.AppendRows(numRows=1)
@@ -203,7 +203,11 @@ class Browse(wx.Frame):
                 
                 search_img_table.SetCellValue( max(0, search_img_table.GetNumberRows()-1), col_nu, cell_value )
                 search_img_table.SetCellOverflow(max(0, search_img_table.GetNumberRows()-1), col_nu,True)
-        self.searching_text.Hide()
+        #self.searching_text.Hide()
+        # get row len of the table
+        row_len = search_img_table.GetNumberRows()
+        print("row_len", row_len)
+        self.searching_text.SetLabel(f"Total Result Found: {len(tables_data)}")
                                 
         
     def on_clear(self, event:wx.Event, obj:Any):
@@ -347,12 +351,21 @@ class Browse(wx.Frame):
         self.download_image_btn.Disable()
         button_sizer.Add(self.download_image_btn, 0, wx.ALL, 5)
         # Searching Text String, it will be disabled but will be enabled once user enter the search button
-        self.searching_text = wx.StaticText(self.panel, label="Searching...")
+        self.download_history = wx.Button(self.panel, label = 'Download History')
+        self.download_history.Bind(wx.EVT_BUTTON, self.show_download_history)
+    
+        self.searching_text = wx.StaticText(self.panel, label="")
         button_sizer.Add(self.searching_text, 0, wx.ALL, 5)
-        self.searching_text.Hide()
+        #self.searching_text.Hide()
  
         main_sizer.Add(button_sizer, 1, wx.RIGHT, 1)
+        main_sizer.Add(self.download_history, 0, wx.ALL, 5)
         return main_sizer
+    
+    def show_download_history(self, event:wx.Event)->None:
+        pop = DownloadHistory()
+        pop.Show()
+        pop.Bind(wx.EVT_CLOSE, self.on_close)
 
 
 if __name__ == '__main__':
