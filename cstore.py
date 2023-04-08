@@ -12,8 +12,7 @@ from pydicom.dataset import Dataset
 from pydicom import dcmread
 from pynetdicom import AE, StoragePresentationContexts, debug_logger
 
-
-# debug_logger()
+debug_logger()
 
 
 @dataclass
@@ -48,10 +47,12 @@ class CStore:
             if status:
                 print(
                     'C-STORE request status: 0x{0:04x}'.format(status.Status))
-                if status.Status != '0x0000':
+                status_str = '0x{0:04x}'.format(status.Status)
+                print('**********************CSOTE STAUT 50************************', status.Status, status_str)
+                if status_str != '0x0000':
                     print(f"File {path} was not uploaded successfully")
                     # print reason for failure
-                    error_cause = self.status_mapper(status.Status)
+                    error_cause = self.status_mapper(status_str)
                     print(f"Error Cause is: {error_cause}")
                 else:
                     success = True
@@ -160,7 +161,7 @@ class CStore:
                 writer.writerow({'File Path': row[0], 'Status': row[1]})
         return not failed
 
-    def upload(self, path:str, folder= True):
+    def upload(self, path:str, folder= True) ->bool:
         if folder:
             dummy_name = path.split("/")[-1]
             dummy_name = dummy_name.replace(" ", "_")
@@ -172,9 +173,12 @@ class CStore:
                         count += 1
                         print(f"Retrying failed request {count} time(s)")
                     else:
-                        break
+                        return True
+            return False
+
+
         else:
-            self.send_c_store(path)
+            return self.send_c_store(path)
 
 if __name__ == "__main__":
     cstore = CStore("DicomServer.co.uk", 104)
