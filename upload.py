@@ -1,5 +1,6 @@
 import wx
 from components import BasicCompo
+from cstore import CStore
 
 
 class UploadFiles(wx.Frame):
@@ -77,16 +78,44 @@ class UploadFiles(wx.Frame):
         self.export_button = BasicCompo.create_button(self.panel, 'Export', True)
         self.export_button.SetPosition((self.GetSize().GetWidth() - self.export_button.GetSize().GetWidth(), 0))
 
+        #Bind actions
+        self.cancel_button.Bind(wx.EVT_BUTTON, self.on_cancel)
+        self.export_button.Bind(wx.EVT_BUTTON, self.on_export)
+
 
         sizer.Add(self.cancel_button, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.export_button, 0, wx.EXPAND | wx.ALL, 5)
+
         return sizer
 
     def on_cancel(self, event):
         self.Close()
     
     def on_export(self, event):
-        pass
+        # find which export option is selected
+        export_option = self.export_options.GetStringSelection()
+        # find which file format is selected
+        file_format = self.file_format_options.GetStringSelection()
+        cstore =  CStore("DicomServer.co.uk", 104)
+        path = self.folder_form_textbox.GetValue()
+        
+        if export_option == 'Selected series':
+            print('Selected series')
+            print('File format: ', file_format)
+            req = cstore.upload(path, False)
+            print(req)
+        elif export_option =='Selected Studies':
+            print('Selected Studies')
+            print('File format: ', file_format)
+            req = cstore.upload(path, True)
+            print(req)
+        # Notifications for success/failure
+        req_status = "Success" if req else "Failed"
+        msg = 'Successfully exported' if req else 'Failed to export'
+        wx.MessageBox(msg, req_status, wx.OK | wx.ICON_INFORMATION)
+        print(msg)
+
+        return
 
     def on_file_format_selection(self, event):
         event = event.GetEventObject()

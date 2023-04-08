@@ -319,7 +319,8 @@ class Configuration(wx.Frame):
             dialog = CustomDialog(
                 self, 'Are you sure you want to delete this IP configuration?')
             if dialog.ShowModal() == wx.ID_YES:
-                BasicCompo.showmsg(3, 'PACS Configuration Deleted Successfully')
+                #BasicCompo.showmsg(3, 'PACS Configuration Deleted Successfully')
+                wx.MessageBox('PACS Configuration Deleted Successfully', "Success", wx.OK | wx.ICON_INFORMATION)
                 initiator.DeleteRows(row_id)
                 self.configured_pacs.pop(row_id)
                 with open('pcv1_file.json', 'w') as file:
@@ -333,7 +334,9 @@ class Configuration(wx.Frame):
 
         except Exception as e:
             #self.show_error_message('Please Select a row to delete')
-            BasicCompo.showmsg(3, 'Please Select a row to delete')
+            #BasicCompo.showmsg(3, 'Please Select a row to delete')
+            wx.MessageBox('Please Select a row to delete', "", wx.OK | wx.ICON_INFORMATION)
+            
             print(e)
         print(self.configured_pacs)
 
@@ -346,14 +349,17 @@ class Configuration(wx.Frame):
                        int(initiator.GetCellValue(row_id, 1)))
         status = c_echo.verify()
         if status:
-            BasicCompo.showmsg(2, 'PACS Server Verified Successfully')
+            #BasicCompo.showmsg(2, 'PACS Server Verified Successfully')
+            wx.MessageBox('PACS Server Verified Successfully', "Success", wx.OK | wx.ICON_INFORMATION)
+            
             num_cols = initiator.GetNumberCols()
             print('num_cols: ', num_cols)
             for col in range(num_cols):
                 initiator.SetCellBackgroundColour(row_id, col, wx.GREEN)
             print('Color Change kr rhe hai 342')
         else:
-            BasicCompo.showmsg(2, 'PACS Failed')
+            #BasicCompo.showmsg(2, 'PACS Failed')
+            wx.MessageBox('PACS Server is not responding', "Failed", wx.OK | wx.ICON_INFORMATION)
             num_cols = initiator.GetNumberCols()
             print('num_cols 345: ', num_cols)
             for col in range(num_cols):
