@@ -4,16 +4,16 @@ import csv
 import os
 from dataclasses import dataclass, field
 from typing import Any
+import logging
+import threading
+import concurrent.futures  
+from concurrent.futures import ThreadPoolExecutor
 from pydicom.dataset import Dataset
 from pydicom import dcmread
 from pynetdicom import AE, StoragePresentationContexts, debug_logger
-import logging
 
 
-debug_logger()
-
-
-
+# debug_logger()
 
 
 @dataclass
@@ -33,7 +33,7 @@ class CStore:
         self.ae.requested_contexts = StoragePresentationContexts
 
 
-    def send_c_store(self, path:str)->None:
+    def send_c_store(self, path:str)->bool:
         ds = dcmread(path)
         #get name of patient name
         patient_name = ds.PatientName
@@ -41,45 +41,82 @@ class CStore:
         study_description = ds.StudyDescription
         print(f"Patient name is: {patient_name}, Study Description is: {study_description}, File Path is: {path}")
         self.assoc = self.ae.associate(self.host, self.port)
-        status = None
+        success = False
         if self.assoc.is_established:
             status = self.assoc.send_c_store(ds)
             print(status)
             if status:
                 print('C-STORE request status: 0x{0:04x}'.format(status.Status))
+                if status.Status != '0x0000':
+                    print(f"File {path} was not uploaded successfully")
+                    #print reason for failure
+                    error_cause = self.status_mapper(status.Status)
+                    print(f"Error Cause is: {error_cause}")
+                else:
+                    success= True
             else:
                 print('Connection timed out, was aborted or received invalid response')
             self.assoc.release()
         else:
             print('Association rejected, aborted or never connected')
-        return status
+        return success
     
-    def upload_full_study(self, folder_path:str)->None:
+    @staticmethod
+    def status_mapper(status_code:str)->str:
+        status_messages = {
+            '0x0000': 'Success',
+            '0x0001': 'Unrecognized Operation',
+            '0x0106': 'Duplicate SOP Instance',
+            '0x0122': 'Missing Attribute Value',
+            # add more status code mappings as needed
+        }
+        return status_messages.get(status_code, 'Unknown error')
+    
+    def upload_full_study(self, folder_path:str)->bool:
         # get All files in folder and for each file call send_c_store and if status is success/failed, create a csv files with file path and status(failed/success)
 
         # so get all files name inside folder
         dummy_name = folder_path.split("/")[-1]
         dummy_name = dummy_name.replace(" ", "_")
-        count = 0
         failed = False
         with open(f'upload_results/result_{dummy_name}.csv', mode='w', newline='') as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(['File Path', 'Status'])
             for file_name in os.listdir(folder_path):
-                count +=1
-                if count <360: continue
                 # create full path
                 full_path = os.path.join(folder_path, file_name)
                 # call send_c_store
-                status = self.send_c_store(full_path)
+                success = self.send_c_store(full_path)
                 # write file path and status to csv file
-                writer.writerow([full_path, 'Success' if status else 'Failed'])
-                if status:
-                    print('C-STORE request status: 0x{0:04x}'.format(status.Status))
-                else:
+                writer.writerow([full_path, 'Success' if success else 'Failed'])
+                if not success:
                     failed = True
                     print('Connection timed out, was aborted or received invalid response')
         return failed
+    
+    def upload_full_study_thread(self, folder_path:str)->bool:
+        dummy_name = folder_path.split("/")[-1]
+        dummy_name = dummy_name.replace(" ", "_")
+        failed = False
+        with open(f'upload_results/result_{dummy_name}.csv', mode='w', newline='') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(['File Path', 'Status'])
+            files = list(os.listdir(folder_path))
+            full_files_path = [os.path.join(folder_path, file_name) for file_name in files]
+            with ThreadPoolExecutor(max_workers=10 ) as executor:
+                future_to_obj = {executor.submit(self.send_c_store, file_path): file_path for file_path in full_files_path}
+                for future in concurrent.futures.as_completed(future_to_obj):
+                    obj = future_to_obj[future]
+                    try:
+                        success = future.result()
+                        writer.writerow([obj, 'Success' if success else 'Failed'])
+                        if not success:
+                            failed = True
+                            print('Connection timed out, was aborted or received invalid response')
+                    except Exception as exc:
+                        print(f"{obj} generated an exception: {exc}")
+        return failed
+
 
     def handle_failed_request(self, report_path:str)->None:
         all_success= True
@@ -113,14 +150,22 @@ class CStore:
             for row in updated_rows:
                 writer.writerow({'File Path': row[0], 'Status': row[1]})
         return all_success
-
-          
+    
 
 
 if __name__ == "__main__":
     cstore = CStore("DicomServer.co.uk", 104)
     #cstore.upload_full_study("test_file")
-    cstore.handle_failed_request("upload_results/result_test_file.csv")
+    #cstore.handle_failed_request("upload_results/result_test_file.csv")
+    # thread_start = time.time()
+    # cstore.upload_full_study_thread("test_dummy_file")
+    # thread_end = time.time()
+    # print(f"Time taken for thread: {thread_end - thread_start}")
+
+    normal_start = time.time()
+    cstore.upload_full_study("test_dummy_file")
+    normal_end = time.time()
+    print(f"Time taken for normal: {normal_end - normal_start}")
     print('DONE REQUEST, Thanks you!')
 
 
