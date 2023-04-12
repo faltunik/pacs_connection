@@ -6,7 +6,7 @@ from cstore import CStore
 class UploadFiles(wx.Frame):
     
     def __init__(self):
-        super().__init__(parent=None, size= (-1, 620), title='Upload Files')
+        super().__init__(parent=None, size= (-1,700), title='Upload Files')
         self.panel = wx.Panel(self)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.main_layout)
@@ -56,8 +56,19 @@ class UploadFiles(wx.Frame):
         sizer= wx.StaticBoxSizer(border, wx.VERTICAL)
         self.image_size = wx.RadioBox(self.panel, label='image size', choices=['Original', 'Default(1:1)', 'Custom'], majorDimension=2, style=wx.RA_SPECIFY_ROWS)
         self.annotations = wx.RadioBox(self.panel, label='Annotations', choices=['None', 'Default', 'Custom'], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
-        self.frame_rate = wx.RadioBox(self.panel, label='Frame Rate', choices=['Default', 'Custom'], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
+
+        self.frame_rate = wx.RadioBox(self.panel, label='Frame Rate', choices=['Default', 'Custom'], majorDimension=2, style=wx.RA_SPECIFY_ROWS)
         self.frame_rate.Disable()
+        self.frame_rate.Bind(wx.EVT_RADIOBOX, self.on_radio_box)
+        self.custom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.custom_label = wx.StaticText(self.panel, label="FPS")
+        self.custom_sizer.Add(self.custom_label, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.custom_frame_rate = wx.TextCtrl(self.panel, style=wx.TE_PROCESS_ENTER, value='30')
+        self.custom_sizer.Add(self.custom_frame_rate, 0, wx.EXPAND | wx.ALL, 5)
+        self.custom_frame_rate.Enable(False)
+        self.custom_frame_rate.Bind(wx.EVT_TEXT_ENTER, self.on_custom_frame_rate, self.custom_frame_rate)
+
         self.jpeg_conf = wx.BoxSizer(wx.HORIZONTAL)
         self.jpeg_label = wx.StaticText(self.panel, label='JPEG Quality')
         self.jpeg_quality = BasicCompo.create_slider(self.panel, 'JPEG Quality',100, 0, 100)
@@ -67,6 +78,8 @@ class UploadFiles(wx.Frame):
         sizer.Add(self.image_size, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.annotations, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.frame_rate, 0, wx.EXPAND | wx.ALL, 5)
+        #sizer.Add(self.custom_frame_rate, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self.custom_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.jpeg_conf, 0, wx.EXPAND | wx.ALL, 5)
 
         return sizer
@@ -88,36 +101,61 @@ class UploadFiles(wx.Frame):
 
         return sizer
 
-    def on_cancel(self, event):
+    def on_cancel(self, event:wx.Event)->None:
         self.Close()
+
+    def on_custom_frame_rate(self, event:wx.Event)->None:
+        try:
+            frame_rate = int(self.custom_frame_rate.GetValue())
+            print(f"Custom frame rate: {frame_rate}")
+        except ValueError:
+            wx.MessageBox("Please enter an integer value.", "Invalid Value", wx.OK|wx.ICON_ERROR)
     
-    def on_export(self, event):
+    def on_radio_box(self, event: wx.Event)->None:
+        if event.GetInt() == 1:  # Custom option selected
+            self.custom_frame_rate.Enable(True)
+        else:
+            self.custom_frame_rate.Enable(False)
+    
+    def on_export(self, even: wx.Event)->None:
         # find which export option is selected
-        export_option = self.export_options.GetStringSelection()
-        # find which file format is selected
-        file_format = self.file_format_options.GetStringSelection()
-        cstore =  CStore("DicomServer.co.uk", 104)
-        path = self.folder_form_textbox.GetValue()
-        
-        if export_option == 'Selected series':
-            print('Selected series')
-            print('File format: ', file_format)
-            req = cstore.upload(path, False)
-            print(req)
-        elif export_option =='Selected Studies':
-            print('Selected Studies')
-            print('File format: ', file_format)
-            req = cstore.upload(path, True)
-            print(req)
-        # Notifications for success/failure
-        req_status = "Success" if req else "Failed"
-        msg = 'Successfully exported' if req else 'Failed to export'
-        wx.MessageBox(msg, req_status, wx.OK | wx.ICON_INFORMATION)
-        print(msg)
+        try:
+            export_option = self.export_options.GetStringSelection()
+            # find which file format is selected
+            file_format = self.file_format_options.GetStringSelection()
+            cstore =  CStore("DicomServer.co.uk", 104)
+            path = self.folder_form_textbox.GetValue()
+
+            # get other information like JPEG Quality, FPS Rate
+            jpeg_quality = self.jpeg_quality.GetValue()
+            print(self.jpeg_quality.IsEnabled())
+            print(f"JPEG Quality: {jpeg_quality}")
+            frame_rate = self.custom_frame_rate.GetValue()
+            print(self.custom_frame_rate.IsEnabled())
+            print(f"Frame Rate: {frame_rate}")
+            
+            if export_option == 'Selected series':
+                print('Selected series')
+                print('File format: ', file_format)
+                req = cstore.upload(path, False)
+                print(req)
+            elif export_option =='Selected Studies':
+                print('Selected Studies')
+                print('File format: ', file_format)
+                req = cstore.upload(path, True)
+                print(req)
+            # Notifications for success/failure
+            req_status = "Success" if req else "Failed"
+            msg = 'Successfully exported' if req else 'Failed to export'
+            wx.MessageBox(msg, req_status, wx.OK | wx.ICON_INFORMATION)
+            print(msg)
+        except Exception as e:
+            print(e)
+            wx.MessageBox("Please select a valid export option.", "Invalid Value", wx.OK|wx.ICON_ERROR)
 
         return
 
-    def on_file_format_selection(self, event):
+    def on_file_format_selection(self, event:wx.Event)->None:
         event = event.GetEventObject()
         file_format = event.GetStringSelection()
         print(file_format)
@@ -136,7 +174,7 @@ class UploadFiles(wx.Frame):
         
         return
 
-    def on_browse_file(self, event):
+    def on_browse_file(self, event: wx.Event)->None:
         evt_obj = event.GetEventObject()
         # now we wanna see the selected Export Type
         export_type = self.export_options.GetStringSelection()
@@ -172,9 +210,8 @@ class UploadFiles(wx.Frame):
         # TODO: WE NEED TO SELECT SET OF REQUIRED FILES, so let users select folders
         return
 
-
     @staticmethod
-    def wild_card_mapper(file_format):
+    def wild_card_mapper(file_format:str)->str:
         if file_format == 'DICOM':
             return "DICOM files (*.dcm)|*.dcm"
         elif file_format == 'NIFTI':
