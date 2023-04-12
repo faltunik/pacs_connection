@@ -19,10 +19,13 @@ debug_logger()
 class CStore:
     """
     Used to Upload DICOM Files to Remote PACS Server
+    TODO: Use Chunking Concept to Upload Large Files
+    TODO: Need to handle uploading large number of files
+    TODO: Add Custom Compressor Handler for JPEG Files/DICOM Files before Upload
+    TODO: Add FPS Custom Handler for MP4 Files
     """
-    # TODO: Use Chunking Concept to Upload Large Files
-    # TODO:Create Spread Sheet to store status of all files so if some files are not uploaded then we can upload them again
-    # TODO: Need to handle uploading large number of files
+
+
 
     host: str
     port: int = 4242

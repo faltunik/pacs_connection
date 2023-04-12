@@ -101,23 +101,23 @@ class UploadFiles(wx.Frame):
 
         return sizer
 
-    def on_cancel(self, event):
+    def on_cancel(self, event:wx.Event)->None:
         self.Close()
 
-    def on_custom_frame_rate(self, event):
+    def on_custom_frame_rate(self, event:wx.Event)->None:
         try:
             frame_rate = int(self.custom_frame_rate.GetValue())
             print(f"Custom frame rate: {frame_rate}")
         except ValueError:
             wx.MessageBox("Please enter an integer value.", "Invalid Value", wx.OK|wx.ICON_ERROR)
     
-    def on_radio_box(self, event):
+    def on_radio_box(self, event: wx.Event)->None:
         if event.GetInt() == 1:  # Custom option selected
             self.custom_frame_rate.Enable(True)
         else:
             self.custom_frame_rate.Enable(False)
     
-    def on_export(self, event):
+    def on_export(self, even: wx.Event)->None:
         # find which export option is selected
         try:
             export_option = self.export_options.GetStringSelection()
@@ -155,7 +155,7 @@ class UploadFiles(wx.Frame):
 
         return
 
-    def on_file_format_selection(self, event):
+    def on_file_format_selection(self, event:wx.Event)->None:
         event = event.GetEventObject()
         file_format = event.GetStringSelection()
         print(file_format)
@@ -174,7 +174,7 @@ class UploadFiles(wx.Frame):
         
         return
 
-    def on_browse_file(self, event):
+    def on_browse_file(self, event: wx.Event)->None:
         evt_obj = event.GetEventObject()
         # now we wanna see the selected Export Type
         export_type = self.export_options.GetStringSelection()
@@ -210,9 +210,8 @@ class UploadFiles(wx.Frame):
         # TODO: WE NEED TO SELECT SET OF REQUIRED FILES, so let users select folders
         return
 
-
     @staticmethod
-    def wild_card_mapper(file_format):
+    def wild_card_mapper(file_format:str)->str:
         if file_format == 'DICOM':
             return "DICOM files (*.dcm)|*.dcm"
         elif file_format == 'NIFTI':
